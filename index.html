@@ -1,641 +1,315 @@
-<!DOCTYPE html>
-<html lang="bg">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pocket Pose Coach</title>
-  <meta name="description" content="Он-лайн треньор за поза и преходи с инерция. Работи изцяло на устройството."/>
-  <style>
-    :root { --bg:#0b0b0f; --fg:#e7e7ea; --muted:#9aa0a6; --accent:#7bc8ff; --bad:#ff6b6b; --ok:#ffd166; --good:#06d6a0; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; background:var(--bg); color:var(--fg); }
-    header { padding: 14px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #23242a; position:sticky; top:0; background:rgba(11,11,15,0.9); backdrop-filter:saturate(150%) blur(8px); z-index:10; }
-    header h1 { font-size: 18px; margin: 0; letter-spacing: 0.5px;}
-    main { display:grid; grid-template-columns: 1fr; gap: 12px; padding: 12px; max-width: 980px; margin: 0 auto; }
-    #stage { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden; background:#0e1117; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
-    video { position:absolute; inset:0; width:100%; height:100%; object-fit: cover; transform: scaleX(-1); }
-    canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; transform: scaleX(-1); }
-    .toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-    .toolbar > * { flex: none; }
-    select, button, input[type="checkbox"]+label { border:1px solid #2a2b31; background:#14151b; color:var(--fg); padding:10px 12px; border-radius:12px; font-size:14px; }
-    button.primary { background:linear-gradient(180deg, #2b9eff, #0078ff); border:none; }
-    .pill { padding:6px 10px; background:#14151b; border:1px solid #2a2b31; border-radius:999px; font-size:12px; color:var(--muted); }
-    .grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
-    .card { background:#0f1218; border:1px solid #1e222b; border-radius:16px; padding:12px; }
-    .score { font-size: 28px; font-weight:700; }
-    .score.good { color:var(--good); }
-    .score.ok { color:var(--ok); }
-    .score.bad { color:var(--bad); }
-    .tips { display:flex; gap:8px; flex-wrap:wrap; }
-    .tip { font-size:12px; padding:8px 10px; border-radius:10px; border:1px dashed #2a2b31; background:#12141a; }
-    footer { padding:10px 16px; color:var(--muted); text-align:center; }
-    .small { font-size:12px; color:var(--muted); }
-    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .spacer { flex:1 }
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1561.61">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; line-height: 14.0px; font: 12.0px Helvetica; color: #000000; -webkit-text-stroke: #000000}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; line-height: 14.0px; font: 12.0px Helvetica; color: #000000; -webkit-text-stroke: #000000; min-height: 14.0px}
+    span.s1 {font-kerning: none}
+    span.s2 {font: 12.0px 'Apple Color Emoji'; font-kerning: none}
+    span.s3 {font: 12.0px 'Lucida Grande'; font-kerning: none}
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <header>
-    <h1>🎥 Pocket Pose Coach</h1>
-    <span class="pill">он-устройство · без облак</span>
-    <span class="pill" id="status">зарежда модел…</span>
-    <span class="spacer"></span>
-    <button id="btnStart" class="primary">Старт камера</button>
-  </header>
-
-  <main>
-    <div id="stage">
-      <video id="video" autoplay playsinline muted></video>
-      <canvas id="overlay"></canvas>
-    </div>
-
-    <div class="toolbar">
-      <label for="facing">Камера:</label>
-      <select id="facing">
-        <option value="environment">Задна</option>
-        <option value="user">Предна</option>
-      </select>
-
-      <label for="move">Движение:</label>
-      <select id="move">
-        <option value="toprock">Top Rock (basic) — бета</option>
-        <option value="squat">Клек</option>
-        <option value="plank">Планк</option>
-
-        <option value="transition_ts">Transition: TopRock → Squat</option>
-        <option value="transition_indian_kneedrop">Transition: Indian Step → Knee Drop</option>
-        <option value="transition_toprock_drop">Transition: TopRock → Drop to Floor</option>
-        <option value="transition_sixstep_babyfreeze">Transition: Six-Step → Baby Freeze</option>
-
-        <option value="transition_toprock_kneedrop">Transition: TopRock → Knee Drop</option>
-        <option value="transition_toprock_sweepdrop">Transition: TopRock → Sweep Drop</option>
-        <option value="transition_toprock_spindrop">Transition: TopRock → Spin Drop</option>
-        <option value="transition_toprock_hookdrop">Transition: TopRock → Hook Drop</option>
-        <option value="transition_toprock_collapsedrop">Transition: TopRock → Collapse Drop</option>
-        <option value="transition_toprock_rolldrop">Transition: TopRock → Roll Drop</option>
-        <option value="transition_toprock_suicidedrop">Transition: TopRock → Suicide Drop</option>
-      </select>
-
-      <div class="row">
-        <input id="voice" type="checkbox" checked />
-        <label for="voice">Гласови съвети</label>
-      </div>
-      <div class="row">
-        <input id="mirror" type="checkbox" checked />
-        <label for="mirror">Огледален режим</label>
-      </div>
-    </div>
-
-    <div class="card"><div><b>Статус / Лог</b></div><div id="log" class="small" style="white-space:pre-wrap; max-height:120px; overflow:auto; margin-top:6px;"></div></div>
-
-    <div class="grid">
-      <div class="card">
-        <div>Оценка</div>
-        <div id="score" class="score">—</div>
-        <div class="small">0–59: нужда от корекции · 60–79: ок · 80–100: отлично</div>
-      </div>
-      <div class="card">
-        <div class="row"><b>Ритъм</b> <span class="spacer"></span><span id="tempo" class="pill">—</span></div>
-        <div class="small">Само за Top Rock: приблизителни стъпки в минута</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div>Съвети в реално време</div>
-      <div id="tips" class="tips"></div>
-    </div>
-
-    <footer class="small">
-      Работи с <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/web_js" target="_blank" rel="noreferrer">MediaPipe Pose Landmarker</a>.
-      Данните не напускат устройството.
-    </footer>
-  </main>
-
-<script>
-const { FilesetResolver, PoseLandmarker, DrawingUtils } = window;
-function logMsg(t){ try{ const el=document.getElementById("log"); if(el){ el.textContent += (t+"\\n"); el.scrollTop = el.scrollHeight; } }catch(e){} }
-function setStatus(t){ const el=document.getElementById("status"); if(el) el.textContent=t; logMsg(t); }
-
-let landmarker = null;
-let running = false;
-let videoEl, canvasEl, ctx;
-let drawing;
-let lastVideoTime = -1;
-let lastStepSide = 0; // -1 L, +1 R
-let lastStepTs = 0;
-let bpmAvg = [];
-
-const LM = {
-  NOSE:0, LEFT_SHOULDER:11, RIGHT_SHOULDER:12, LEFT_ELBOW:13, RIGHT_ELBOW:14,
-  LEFT_WRIST:15, RIGHT_WRIST:16, LEFT_HIP:23, RIGHT_HIP:24, LEFT_KNEE:25, RIGHT_KNEE:26,
-  LEFT_ANKLE:27, RIGHT_ANKLE:28
-};
-
-function vec(a,b){ return {x:b.x-a.x, y:b.y-a.y}; }
-function mag(v){ return Math.hypot(v.x, v.y); }
-function dot(a,b){ return a.x*b.x + a.y*b.y; }
-function angle(a,b,c){
-  const v1 = vec(b,a), v2 = vec(b,c);
-  const cos = (dot(v1,v2)) / (mag(v1)*mag(v2) + 1e-6);
-  return Math.acos(Math.min(1, Math.max(-1, cos))) * 180/Math.PI;
-}
-function torsoTiltDeg(lm){
-  const s = mid(lm[LM.LEFT_SHOULDER], lm[LM.RIGHT_SHOULDER]);
-  const h = mid(lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP]);
-  const v = {x: s.x-h.x, y: s.y-h.y};
-  const up = {x:0, y:-1};
-  const cos = (dot(v,up)) / (mag(v)*mag(up) + 1e-6);
-  return Math.acos(Math.min(1, Math.max(-1, cos))) * 180/Math.PI;
-}
-function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
-function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
-function within(val, min, max){ return val>=min && val<=max; }
-
-function speak(txt){
-  if(!document.getElementById('voice').checked) return;
-  try{
-    const u = new SpeechSynthesisUtterance(txt);
-    u.lang = 'bg-BG';
-    u.rate = 1.0;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-  }catch(e){}
-}
-
-const MOVES = {
-  squat: {
-    name: "Клек",
-    constraints: [
-      { id:"back", test:(lm)=> torsoTiltDeg(lm) < 15, tip:"Изправи торса (<15° наклон)." },
-      { id:"kneesLeft", test:(lm)=> Math.abs(lm[LM.LEFT_KNEE].x - lm[LM.LEFT_ANKLE].x) < 0.06, tip:"Лявото коляно да е над стъпалото." },
-      { id:"kneesRight", test:(lm)=> Math.abs(lm[LM.RIGHT_KNEE].x - lm[LM.RIGHT_ANKLE].x) < 0.06, tip:"Дясното коляно да е над стъпалото." },
-      { id:"depth", test:(lm)=> (lm[LM.LEFT_HIP].y < lm[LM.LEFT_KNEE].y) || (lm[LM.RIGHT_HIP].y < lm[LM.RIGHT_KNEE].y), tip:"Слязъл/а си недостатъчно (бедрото под хоризонтала)." }
-    ]
-  },
-  plank: {
-    name:"Планк",
-    constraints:[
-      { id:"line", test:(lm)=> {
-          const a = angle(lm[LM.LEFT_SHOULDER], lm[LM.LEFT_HIP], lm[LM.LEFT_ANKLE]);
-          const b = angle(lm[LM.RIGHT_SHOULDER], lm[LM.RIGHT_HIP], lm[LM.RIGHT_ANKLE]);
-          return within(a,165,180) && within(b,165,180);
-        }, tip:"Една линия от рамо до глезен." },
-      { id:"hips", test:(lm)=> {
-          const s = mid(lm[LM.LEFT_SHOULDER], lm[LM.RIGHT_SHOULDER]);
-          const h = mid(lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP]);
-          const ratio = (h.y - s.y);
-          return ratio > 0.10 && ratio < 0.28;
-        }, tip:"Не вдигай/сваляй таза." }
-    ]
-  },
-  toprock: {
-    name:"Top Rock (basic)",
-    constraints:[
-      { id:"shoulders", test:(lm)=> Math.abs(lm[LM.LEFT_SHOULDER].y - lm[LM.RIGHT_SHOULDER].y) < 0.06, tip:"Дръж раменете хоризонтално." },
-      { id:"stance", test:(lm)=> {
-          const shoulderW = Math.abs(lm[LM.LEFT_SHOULDER].x - lm[LM.RIGHT_SHOULDER].x);
-          const footW = Math.abs(lm[LM.LEFT_ANKLE].x - lm[LM.RIGHT_ANKLE].x);
-          return footW >= 0.75*shoulderW;
-        }, tip:"Отвори стъпката ≥ ширина на рамене." },
-      { id:"upright", test:(lm)=> torsoTiltDeg(lm) < 20, tip:"Изправи торса." }
-    ],
-    stepDetector:(lm, ts)=>{
-      const diff = lm[LM.RIGHT_ANKLE].x - lm[LM.LEFT_ANKLE].x;
-      const side = diff > 0.08 ? +1 : (diff < -0.08 ? -1 : 0);
-      let bpm = null;
-      if(side !== 0 && side !== lastStepSide){
-        const now = ts;
-        if(lastStepTs>0){
-          const dt = (now - lastStepTs)/1000;
-          const spm = 60/dt;
-          const stepsPerMin = spm * 1.0;
-          bpm = stepsPerMin;
-          bpmAvg.push(stepsPerMin);
-          if(bpmAvg.length>6) bpmAvg.shift();
-        }
-        lastStepTs = now;
-        lastStepSide = side;
-      }
-      return bpm;
-    }
-  }
-};
-
-// --- Transition profiles ---
-const TRANSITIONS = {
-  transition_ts: {
-    name: "TopRock → Squat",
-    type: "standing",
-    boundary(lm, prev){
-      const hipAbove = (p)=> (p[LM.LEFT_HIP].y < p[LM.LEFT_KNEE].y*0.98) && (p[LM.RIGHT_HIP].y < p[LM.RIGHT_KNEE].y*0.98);
-      const hipBelow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.98);
-      try{ return prev && hipAbove(prev) && hipBelow(lm); }catch(e){ return false; }
-    }
-  },
-  transition_indian_kneedrop: {
-    name: "Indian Step → Knee Drop",
-    type: "standing",
-    boundary(lm, prev){
-      const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
-      const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
-      const sharpFlex = (kneeAngleL<75) || (kneeAngleR<75);
-      const hipBelowKnee = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.98);
-      try{ return prev && sharpFlex && hipBelowKnee(lm); }catch(e){ return false; }
-    }
-  },
-  transition_toprock_drop: {
-    name: "TopRock → Drop to Floor",
-    type: "standing",
-    boundary(lm, prev){
-      const handsLow = (c)=> (c[LM.LEFT_WRIST].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_WRIST].y > c[LM.RIGHT_KNEE].y*0.98);
-      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.95) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.95);
-      try{ return prev && handsLow(lm) && hipsLow(lm); }catch(e){ return false; }
-    }
-  },
-  transition_sixstep_babyfreeze: {
-    name: "Six-Step → Baby Freeze",
-    type: "floor",
-    boundary(lm, prev){
-      function near(a,b){ return dist(a,b) < 0.10; }
-      const oppClose1 = near(lm[LM.LEFT_WRIST], lm[LM.RIGHT_KNEE]);
-      const oppClose2 = near(lm[LM.RIGHT_WRIST], lm[LM.LEFT_KNEE]);
-      const hipsVeryLow = (c)=> (c[LM.LEFT_HIP].y > Math.max(c[LM.LEFT_KNEE].y, c[LM.RIGHT_KNEE].y) * 0.98);
-      const elbowsBent = ()=> {
-        const aL = angle(lm[LM.LEFT_SHOULDER], lm[LM.LEFT_ELBOW], lm[LM.LEFT_WRIST]);
-        const aR = angle(lm[LM.RIGHT_SHOULDER], lm[LM.RIGHT_ELBOW], lm[LM.RIGHT_WRIST]);
-        return (aL<150) || (aR<150);
-      };
-      try{ return prev && (oppClose1||oppClose2) && hipsVeryLow(lm) && elbowsBent(); }catch(e){ return false; }
-    }
-  },
-  transition_toprock_kneedrop: {
-    name: "TopRock → Knee Drop",
-    type: "standing",
-    boundary(lm, prev){
-      const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
-      const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
-      const sharpFlex = (kneeAngleL<75) || (kneeAngleR<75);
-      const hipBelowKnee = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.98);
-      try{ return prev && sharpFlex && hipBelowKnee(lm); }catch(e){ return false; }
-    }
-  },
-  transition_toprock_sweepdrop: {
-    name: "TopRock → Sweep Drop",
-    type: "standing",
-    boundary(lm, prev){
-      function ankleSpeed(curr, prev, side){
-        const A = side==='L'? LM.LEFT_ANKLE : LM.RIGHT_ANKLE;
-        const dx = Math.abs(curr[A].x - prev[A].x);
-        const dy = Math.abs(curr[A].y - prev[A].y);
-        return Math.hypot(dx,dy);
-      }
-      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
-      try{
-        if(!prev) return false;
-        const vL = ankleSpeed(lm, prev, 'L');
-        const vR = ankleSpeed(lm, prev, 'R');
-        const fastFoot = (vL>0.02) || (vR>0.02);
-        return fastFoot && hipsLow(lm);
-      }catch(e){ return false; }
-    }
-  },
-  transition_toprock_spindrop: {
-    name: "TopRock → Spin Drop",
-    type: "standing",
-    boundary(lm, prev){
-      function shoulderAngle(p){
-        const v = vec(p[LM.LEFT_SHOULDER], p[LM.RIGHT_SHOULDER]);
-        return Math.atan2(v.y, v.x);
-      }
-      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
-      try{
-        if(!prev) return false;
-        const a0 = shoulderAngle(prev), a1 = shoulderAngle(lm);
-        const rot = Math.abs(a1 - a0);
-        return (rot > 0.20) && hipsLow(lm);
-      }catch(e){ return false; }
-    }
-  },
-  transition_toprock_hookdrop: {
-    name: "TopRock → Hook Drop",
-    type: "standing",
-    boundary(lm, prev){
-      function anklesCross(c){
-        return Math.abs(c[LM.LEFT_ANKLE].x - c[LM.RIGHT_ANKLE].x) < 0.05;
-      }
-      const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
-      const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
-      const sharpFlex = (kneeAngleL<85) || (kneeAngleR<85);
-      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
-      try{ return prev && anklesCross(lm) && sharpFlex && hipsLow(lm); }catch(e){ return false; }
-    }
-  },
-  transition_toprock_collapsedrop: {
-    name: "TopRock → Collapse Drop",
-    type: "standing",
-    boundary(lm, prev){
-      function hipVertSpeed(curr, prev){
-        const hC = mid(curr[LM.LEFT_HIP], curr[LM.RIGHT_HIP]);
-        const hP = mid(prev[LM.LEFT_HIP], prev[LM.RIGHT_HIP]);
-        return Math.abs(hC.y - hP.y);
-      }
-      function ankleDelta(curr, prev){
-        const dL = Math.hypot(curr[LM.LEFT_ANKLE].x - prev[LM.LEFT_ANKLE].x, curr[LM.LEFT_ANKLE].y - prev[LM.LEFT_ANKLE].y);
-        const dR = Math.hypot(curr[LM.RIGHT_ANKLE].x - prev[LM.RIGHT_ANKLE].x, curr[LM.RIGHT_ANKLE].y - prev[LM.RIGHT_ANKLE].y);
-        return (dL + dR)/2;
-      }
-      try{
-        if(!prev) return false;
-        const vHip = hipVertSpeed(lm, prev);
-        const vAnk = ankleDelta(lm, prev);
-        return (vHip>0.02) && (vAnk<0.015);
-      }catch(e){ return false; }
-    }
-  },
-  transition_toprock_rolldrop: {
-    name: "TopRock → Roll Drop",
-    type: "standing",
-    boundary(lm, prev){
-      const shoulderLow = (c)=> (c[LM.LEFT_SHOULDER].y > c[LM.LEFT_KNEE].y) || (c[LM.RIGHT_SHOULDER].y > c[LM.RIGHT_KNEE].y);
-      const wristsLow = (c)=> (c[LM.LEFT_WRIST].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_WRIST].y > c[LM.RIGHT_KNEE].y*0.98);
-      try{ return prev && shoulderLow(lm) && wristsLow(lm); }catch(e){ return false; }
-    }
-  },
-  transition_toprock_suicidedrop: {
-    name: "TopRock → Suicide Drop",
-    type: "standing",
-    boundary(lm, prev){
-      function torsoTilt(curr){
-        const s = mid(curr[LM.LEFT_SHOULDER], curr[LM.RIGHT_SHOULDER]);
-        const h = mid(curr[LM.LEFT_HIP], curr[LM.RIGHT_HIP]);
-        const v = {x: s.x-h.x, y: s.y-h.y};
-        const up = {x:0, y:-1};
-        const cos = (dot(v,up)) / (Math.hypot(v.x,v.y)*1 + 1e-6);
-        return Math.acos(Math.min(1, Math.max(-1, cos))) * 180/Math.PI;
-      }
-      const wristsLow = (c)=> (c[LM.LEFT_WRIST].y > c[LM.LEFT_HIP].y*0.98) || (c[LM.RIGHT_WRIST].y > c[LM.RIGHT_HIP].y*0.98);
-      try{
-        if(!prev) return false;
-        const t0 = torsoTilt(prev), t1 = torsoTilt(lm);
-        const dT = Math.abs(t1 - t0);
-        return (t1>50 && dT>6) && wristsLow(lm);
-      }catch(e){ return false; }
-    }
-  }
-};
-
-function getTransitionProfile(id){ return TRANSITIONS[id] || TRANSITIONS['transition_ts']; }
-
-let prevLm = null, prevTs = 0;
-let speedHist = [], jerkHist = [], angleVelHist = [];
-let boundaryTs = null;
-
-function com(lm){ return mid(lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP]); }
-function horizSpeed(a,b,dt){ if(!a || !b || dt<=0) return 0; return Math.abs(b.x - a.x) / dt; }
-function angleShoulderHipAnkle(lm, left=true){
-  const S = left ? LM.LEFT_SHOULDER : LM.RIGHT_SHOULDER;
-  const H = left ? LM.LEFT_HIP : LM.RIGHT_HIP;
-  const A = left ? LM.LEFT_ANKLE : LM.RIGHT_ANKLE;
-  return angle(lm[S], lm[H], lm[A]);
-}
-function lowPass(arr, k=5){
-  if(!arr.length) return 0;
-  const n = Math.min(k, arr.length); let s=0;
-  for(let i=arr.length-n;i<arr.length;i++) s+=arr[i];
-  return s/n;
-}
-
-async function init(){
-  videoEl = document.getElementById('video');
-  canvasEl = document.getElementById('overlay');
-  ctx = canvasEl.getContext('2d');
-  drawing = new DrawingUtils(ctx);
-
-  updateMirror();
-  setStatus('зарежда модел…'); if(!window.isSecureContext){ logMsg('⚠ file:// може да блокира камерата. Ползвай HTTPS или локален сървър.'); }
-
-  const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
-  try {
-    landmarker = await PoseLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-        delegate:"GPU"
-      },
-      runningMode: "VIDEO",
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.5,
-      minPosePresenceConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
-    setStatus('модел: готов');
-  } catch(e){
-    setStatus('Проблем при зареждане на модела: '+e.message);
-  }
-}
-
-function updateMirror(){
-  const mirrored = document.getElementById('mirror').checked;
-  videoEl.style.transform = mirrored ? 'scaleX(-1)' : 'scaleX(1)';
-  canvasEl.style.transform = mirrored ? 'scaleX(-1)' : 'scaleX(1)';
-}
-
-async function startCamera(){
-  if(!window.isSecureContext){
-    setStatus("Нужно е HTTPS или localhost, иначе камерата е блокирана.");
-    logMsg("Съвет: отвори файла по HTTPS или през локален сървър.");
-    alert("Камерата е блокирана за file:// страници.");
-  }
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    setStatus("getUserMedia не е налично в този браузър."); return;
-  }
-  const desiredFacing = document.getElementById('facing').value;
-  let constraintsList = [
-    { video: { facingMode: { ideal: desiredFacing } }, audio:false },
-    { video: { facingMode: 'user' }, audio:false },
-    { video: true, audio:false }
-  ];
-  try{
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const hasBack = devices.some(d=> d.kind==='videoinput' && /back|rear|environment/i.test(d.label));
-    if(!hasBack && desiredFacing==='environment'){
-      constraintsList = constraintsList.slice(1);
-      logMsg("Не открих задна камера. Преминавам към предна.");
-    }
-  }catch(e){ logMsg("enumerateDevices грешка: "+e.message); }
-
-  let stream = null;
-  for(const c of constraintsList){
-    try{ stream = await navigator.mediaDevices.getUserMedia(c); logMsg("Камера стартира с: "+JSON.stringify(c)); break; }
-    catch(err){ logMsg("Провал с "+JSON.stringify(c)+": "+err.name+" / "+err.message); }
-  }
-  if(!stream){ setStatus("Грешка при достъп до камерата."); return; }
-
-  try{
-    videoEl.srcObject = stream;
-    await new Promise(res => videoEl.onloadeddata = res);
-    canvasEl.width = videoEl.videoWidth || 1280;
-    canvasEl.height = videoEl.videoHeight || 720;
-    running = true;
-    setStatus("камера: активна");
-    predictLoop();
-  }catch(e){ setStatus("Проблем при инициализация на видео: "+e.message); }
-}
-
-function setScore(val){
-  const el = document.getElementById('score');
-  el.textContent = isFinite(val) ? String(val) : '—';
-  el.classList.remove('good','ok','bad');
-  if(!isFinite(val)) return;
-  el.classList.add(val>=80 ? 'good' : val>=60 ? 'ok' : 'bad');
-}
-function setTempo(val){
-  const el = document.getElementById('tempo');
-  if(!val){ el.textContent = '—'; return; }
-  const avg = bpmAvg.length ? (bpmAvg.reduce((a,b)=>a+b,0)/bpmAvg.length) : val;
-  el.textContent = Math.round(avg) + ' стъпки/мин';
-}
-function setTips(list){
-  const el = document.getElementById('tips');
-  el.innerHTML = '';
-  list.slice(0,4).forEach(t=>{
-    const d = document.createElement('span');
-    d.className = 'tip';
-    d.textContent = t;
-    el.appendChild(d);
-  });
-  if(list.length && document.getElementById('voice').checked){ speak(list[0]); }
-}
-
-function transitionScoreAndTips(){
-  if(boundaryTs===null){
-    const s = lowPass(speedHist, 10);
-    const tips = [];
-    if(s<0.002) tips.push("Подготви входа: движи центъра/ъгъла плавно.");
-    tips.push("Влез без да губиш инерция.");
-    return {score: Math.round(Math.min(100, s*60000)), tips};
-  }
-  const N = Math.min(speedHist.length, 36);
-  const half = Math.floor(N/2);
-  const pre = speedHist.slice(Math.max(0,speedHist.length-N), Math.max(0,speedHist.length-N)+half);
-  const post = speedHist.slice(Math.max(0,speedHist.length-N)+half);
-  const sPre = pre.length ? pre.reduce((a,b)=>a+b,0)/pre.length : 0;
-  const sPost = post.length ? post.reduce((a,b)=>a+b,0)/post.length : 0;
-  const jerkAvg = (jerkHist.slice(-N).reduce((a,b)=>a+b,0))/Math.max(1,Math.min(N,jerkHist.length));
-  const angleVel = (angleVelHist.slice(-N).reduce((a,b)=>a+b,0))/Math.max(1,Math.min(N,angleVelHist.length));
-
-  const retention = sPre>0 ? (sPost/sPre) : 0;
-  const jerkScore = Math.max(0, 1 - (jerkAvg / 0.08));
-  const angScore = Math.max(0, 1 - (angleVel / 180));
-  const combined = (0.5*retention + 0.3*jerkScore + 0.2*angScore);
-  const score = Math.round(100 * Math.max(0, Math.min(1, combined)));
-
-  const tips = [];
-  if(retention<0.7) tips.push("Запази скоростта през входа.");
-  if(jerkScore<0.7) tips.push("Омекоти рязката промяна.");
-  if(angScore<0.7) tips.push("Плавни ъгли в прехода.");
-
-  return {score, tips};
-}
-
-function scoreAndTips(lm, moveId){
-  const move = MOVES[moveId];
-  const tips = [];
-  let okCount = 0;
-  for(const c of move.constraints){
-    const pass = safeTest(()=>c.test(lm));
-    if(pass) okCount++; else tips.push(c.tip);
-  }
-  const score = Math.round(100 * okCount / move.constraints.length);
-  return {score, tips};
-}
-function safeTest(fn){ try{ return !!fn(); } catch(e){ return false; } }
-
-async function predictLoop(){
-  if(!running) return;
-  const now = performance.now();
-
-  if(videoEl.currentTime !== lastVideoTime){
-    lastVideoTime = videoEl.currentTime;
-
-    // ✅ правилно използване на API-то:
-    const res = landmarker.detectForVideo(videoEl, now);
-
-    ctx.clearRect(0,0,canvasEl.width, canvasEl.height);
-    if(res && res.landmarks && res.landmarks[0]){
-      const lm = res.landmarks[0];
-      drawing.drawLandmarks(lm, { radius: (data)=> DrawingUtils.lerp(data.from?.z ?? 0, -0.15, 0.1, 5, 1) });
-      drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS);
-
-      const moveId = document.getElementById('move').value;
-
-      if(moveId.startsWith('transition_')){
-        const prof = getTransitionProfile(moveId);
-        const nowTs = performance.now()/1000;
-
-        if(prof.boundary(lm, prevLm) && boundaryTs===null){ boundaryTs = nowTs; speak("Вход!"); }
-
-        const dt = (prevTs? nowTs - prevTs : 0.033);
-        if(prevLm && dt>0){
-          if(prof.type === 'floor'){
-            const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
-            const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
-            const aVel = Math.abs(aNow - aPrev)/dt;
-            speedHist.push(aVel/180); if(speedHist.length>60) speedHist.shift();
-            const n = speedHist.length;
-            if(n>=2){ const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt; jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift(); }
-            angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
-          } else {
-            const cPrev = com(prevLm); const cNow = com(lm);
-            const v = horizSpeed(cPrev, cNow, dt);
-            speedHist.push(v); if(speedHist.length>60) speedHist.shift();
-            const n = speedHist.length;
-            if(n>=2){ const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt; jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift(); }
-            const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
-            const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
-            const aVel = Math.abs(aNow - aPrev)/dt;
-            angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
-          }
-        }
-        prevLm = lm; prevTs = nowTs;
-
-        const {score, tips} = transitionScoreAndTips();
-        if(moveId==='transition_indian_kneedrop') tips.unshift("Свали коляното плавно в такт.");
-        if(moveId==='transition_toprock_drop') tips.unshift("Пусни ръце към пода без спиране.");
-        if(moveId==='transition_sixstep_babyfreeze') tips.unshift("Претегли на ръце и заключи бебе-фрийза гладко.");
-        if(moveId==='transition_toprock_kneedrop') tips.unshift("Меки колене, пази инерцията към пода.");
-        if(moveId==='transition_toprock_sweepdrop') tips.unshift("Широк sweep и плавен контрол към пода.");
-        if(moveId==='transition_toprock_spindrop') tips.unshift("Поддържай въртенето – не спирай преди спускането.");
-        if(moveId==='transition_toprock_hookdrop') tips.unshift("Хукът да е ясен, но без блокиране.");
-        if(moveId==='transition_toprock_collapsedrop') tips.unshift("Изглеждай като „падане“, но без да губиш flow.");
-        if(moveId==='transition_toprock_rolldrop') tips.unshift("Снизход през рамо, задръж кръговата енергия.");
-        if(moveId==='transition_toprock_suicidedrop') tips.unshift("Комитнат вход, после стабилен контрол.");
-        setScore(score); setTips(tips); setTempo(null);
-
-      } else {
-        boundaryTs = null; prevLm=null; prevTs=0; speedHist.length=0; jerkHist.length=0; angleVelHist.length=0;
-        const {score, tips} = scoreAndTips(lm, moveId);
-        setScore(score); setTips(tips);
-        if(moveId === 'toprock' && MOVES.toprock.stepDetector){
-          const bpm = MOVES.toprock.stepDetector(lm, performance.now()/1000);
-          if(bpm) setTempo(bpm);
-        } else { setTempo(null); }
-      }
-    } else {
-      setScore(NaN);
-      setTips(["Покажи цяло тяло в кадър."]);
-      setTempo(null);
-    }
-  }
-  requestAnimationFrame(predictLoop);
-}
-
-document.getElementById('btnStart').addEventListener('click', startCamera);
-document.getElementById('mirror').addEventListener('change', updateMirror);
-
-function safeTest(fn){ try{ return !!fn(); } catch(e){ return false; } }
-
-init();
-</script>
+<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
+<p class="p1"><span class="s1">&lt;html lang="bg"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;head&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta charset="utf-8"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;title&gt;Pocket Drill Coach — Metronome · Intervals · Prompts&lt;/title&gt;</span></p>
+<p class="p1"><span class="s1">&lt;style&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>:root{--bg:#0b0b0f;--card:#12151b;--fg:#f1f3f5;--muted:#9aa0a6;--acc:#5ec6ff;--ok:#06d6a0;--warn:#ffd166}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>header{padding:14px 16px;border-bottom:1px solid #1f2229;display:flex;gap:12px;align-items:center;position:sticky;top:0;background:#0b0b0feb;backdrop-filter:blur(8px)}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>h1{font-size:16px;margin:0}main{max-width:960px;margin:0 auto;padding:16px;display:grid;gap:12px}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.grid{display:grid;gap:12px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.card{background:var(--card);border:1px solid #1f2229;border-radius:14px;padding:12px}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>input,select,button,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #242833;background:#0e1117;color:var(--fg);font-size:14px}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>button.primary{background:linear-gradient(180deg,#2b9eff,#0078ff);border:none}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.pill{padding:6px 10px;border:1px solid #242833;border-radius:999px;color:var(--muted);font-size:12px}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.big{font-size:40px;font-weight:700;text-align:center}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.center{display:flex;justify-content:center;align-items:center;gap:8px}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.ok{color:var(--ok)} .warn{color:var(--warn)}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>textarea{min-height:120px;resize:vertical}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.muted{color:var(--muted);font-size:12px}</span></p>
+<p class="p1"><span class="s1">&lt;/style&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
+<p class="p1"><span class="s1">&lt;body&gt;</span></p>
+<p class="p1"><span class="s1">&lt;header&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;h1&gt;</span><span class="s2">🎧</span><span class="s1"> Pocket Drill Coach&lt;/h1&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;span class="pill"&gt;без права · офлайн&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;span class="pill" id="status"&gt;готов&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/header&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;main&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="grid g2"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="row"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div style="flex:1"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;label for="bpm"&gt;BPM&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;input id="bpm" type="number" min="30" max="220" value="96"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div style="width:140px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;label for="meter"&gt;Метр&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;select id="meter"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;option value="4"&gt;4/4&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;option value="3"&gt;3/4&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;option value="2"&gt;2/4&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;/select&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="row" style="margin-top:8px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button id="btnMetro" class="primary" style="flex:1"&gt;</span><span class="s3">▶︎</span><span class="s1"> Пусни метроном&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button id="btnTap" style="width:160px"&gt;Tap Tempo&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="center" style="margin-top:8px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div class="big" id="beat"&gt;—&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div class="pill" id="bpmLive"&gt;96 BPM&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="muted"&gt;Акцент на 1. Подходящ за TopRock и входове към drops.&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="row"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div style="flex:1"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;label for="work"&gt;Работа (сек)&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;input id="work" type="number" min="5" value="40"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div style="flex:1"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;label for="rest"&gt;Почивка (сек)&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;input id="rest" type="number" min="5" value="20"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div style="flex:1"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;label for="rounds"&gt;Кръгове&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;input id="rounds" type="number" min="1" value="6"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="row" style="margin-top:8px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button id="btnIntervals" class="primary" style="flex:1"&gt;</span><span class="s3">▶︎</span><span class="s1"> Стартирай интервали&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button id="btnReset"&gt;Reset&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="center" style="margin-top:8px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div class="big" id="intervalTime"&gt;00:00&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div class="pill" id="intervalState"&gt;готов&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div class="pill" id="intervalRound"&gt;0/0&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="muted"&gt;Комбо: пусни метронома + интервали за „кръгове с музикално време“.&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;label for="prompts"&gt;Команди (по една на ред)&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;textarea id="prompts"&gt;TopRock</span></p>
+<p class="p1"><span class="s1">Indian Step</span></p>
+<p class="p1"><span class="s1">TopRock </span><span class="s3">→</span><span class="s1"> Knee Drop</span></p>
+<p class="p1"><span class="s1">TopRock </span><span class="s3">→</span><span class="s1"> Sweep Drop</span></p>
+<p class="p1"><span class="s1">TopRock </span><span class="s3">→</span><span class="s1"> Spin Drop</span></p>
+<p class="p1"><span class="s1">TopRock </span><span class="s3">→</span><span class="s1"> Hook Drop</span></p>
+<p class="p1"><span class="s1">TopRock </span><span class="s3">→</span><span class="s1"> Collapse Drop</span></p>
+<p class="p1"><span class="s1">TopRock </span><span class="s3">→</span><span class="s1"> Roll Drop</span></p>
+<p class="p1"><span class="s1">TopRock </span><span class="s3">→</span><span class="s1"> Suicide Drop</span></p>
+<p class="p1"><span class="s1">Six-Step </span><span class="s3">→</span><span class="s1"> Baby Freeze</span></p>
+<p class="p1"><span class="s1">Freeze (задръж 2 такта)</span></p>
+<p class="p1"><span class="s1">Footwork – 3 стъпки</span></p>
+<p class="p1"><span class="s1">Backstep </span><span class="s3">→</span><span class="s1"> CC</span></p>
+<p class="p1"><span class="s1">Uprock </span><span class="s3">→</span><span class="s1"> вход&lt;/textarea&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="grid g2" style="margin-top:8px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;label for="mode"&gt;Режим на подаване&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;select id="mode"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;option value="beats"&gt;на всеки N удара&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>&lt;option value="seconds"&gt;на всеки N секунди&lt;/option&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/select&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;label for="everyN"&gt;Интервал (N)&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;input id="everyN" type="number" min="1" value="8"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row" style="margin-top:8px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;button id="btnPrompts" class="primary" style="flex:1"&gt;</span><span class="s3">▶︎</span><span class="s1"> Пусни команди&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;button id="btnNext"&gt;Следваща&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="center" style="margin-top:8px"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;div class="big" id="prompt"&gt;—&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="muted"&gt;Съвет: сложи N=8 удара (2 такта на 4/4) за плавни входове с инерция.&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="card"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="row"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;button id="btnAllStart" class="primary" style="flex:1"&gt;</span><span class="s3">▶︎</span><span class="s1"> Пусни всичко&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;button id="btnAllStop" style="flex:1"&gt;</span><span class="s3">■</span><span class="s1"> Спри всичко&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="muted" style="margin-top:8px"&gt;Първият клик отключва звука (правило на браузърите).&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/main&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;script&gt;</span></p>
+<p class="p1"><span class="s1">let ac, clickHi, clickLo, runningMetro=false, metroTimer=null, beat=0, beatsPerBar=4, lastTap=0, taps=[];</span></p>
+<p class="p1"><span class="s1">let runningIntervals=false, intervalTimer=null, phase='ready', leftInPhase=0, round=0, totalRounds=0;</span></p>
+<p class="p1"><span class="s1">let runningPrompts=false, promptsList=[], promptTimer=null, promptEvery=8, promptMode='beats', beatsSince=0;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">const $=id=&gt;document.getElementById(id);</span></p>
+<p class="p1"><span class="s1">function fmt(t){ t=Math.max(0,Math.floor(t)); const m=String(Math.floor(t/60)).padStart(2,'0'); const s=String(t%60).padStart(2,'0'); return m+':'+s; }</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">function ensureAudio(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(ac) return;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>ac = new (window.AudioContext||window.webkitAudioContext)();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>// clicks</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>clickHi = (when)=&gt;{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const o = ac.createOscillator(); const g = ac.createGain();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>o.type='square'; o.frequency.value=1760; g.gain.value=0.001;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>o.connect(g).connect(ac.destination);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>g.gain.setValueAtTime(0.001, when);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>g.gain.exponentialRampToValueAtTime(0.5, when+0.001);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>g.gain.exponentialRampToValueAtTime(0.001, when+0.06);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>o.start(when); o.stop(when+0.07);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>};</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>clickLo = (when)=&gt;{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const o = ac.createOscillator(); const g = ac.createGain();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>o.type='square'; o.frequency.value=880; g.gain.value=0.001;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>o.connect(g).connect(ac.destination);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>g.gain.setValueAtTime(0.001, when);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>g.gain.exponentialRampToValueAtTime(0.4, when+0.001);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>g.gain.exponentialRampToValueAtTime(0.001, when+0.05);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>o.start(when); o.stop(when+0.06);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>};</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">function startMetronome(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>ensureAudio(); if(ac.state==='suspended') ac.resume();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>runningMetro=true; beat=0; scheduleTick(); $('btnMetro').textContent='</span><span class="s3">■</span><span class="s1"> Спри метроном';</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">function stopMetronome(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>runningMetro=false; clearTimeout(metroTimer); $('beat').textContent='—'; $('btnMetro').textContent='</span><span class="s3">▶︎</span><span class="s1"> Пусни метроном';</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">function scheduleTick(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(!runningMetro) return;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const bpm = Math.max(30, Math.min(220, Number($('bpm').value)||96));</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('bpmLive').textContent = bpm+' BPM';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>beatsPerBar = Number($('meter').value)||4;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const now = ac.currentTime;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const isAccent = (beat % beatsPerBar)===0;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>(isAccent?clickHi:clickLo)(now+0.02);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('beat').textContent = (beat % beatsPerBar)+1;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(runningPrompts &amp;&amp; promptMode==='beats'){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>beatsSince++;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(beatsSince&gt;=promptEvery){ nextPrompt(); beatsSince=0; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>beat++;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const intervalMs = 60000/bpm;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>metroTimer = setTimeout(scheduleTick, intervalMs);</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">$('btnMetro').onclick=()=&gt;{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(!runningMetro) startMetronome(); else stopMetronome();</span></p>
+<p class="p1"><span class="s1">};</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">$('btnTap').onclick=()=&gt;{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const t = performance.now();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(t-lastTap&gt;2000) taps.length=0;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(lastTap) taps.push(t-lastTap);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>lastTap=t;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(taps.length&gt;=3){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const avg = taps.slice(-6).reduce((a,b)=&gt;a+b,0)/Math.min(6,taps.length);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const bpm = Math.round(60000/avg);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('bpm').value = bpm; $('bpmLive').textContent=bpm+' BPM';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1">};</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">// Intervals</span></p>
+<p class="p1"><span class="s1">function startIntervals(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>ensureAudio(); if(ac.state==='suspended') ac.resume();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(runningIntervals) return;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const w = Math.max(5, Number($('work').value)||40);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const r = Math.max(5, Number($('rest').value)||20);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>totalRounds = Math.max(1, Number($('rounds').value)||6);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>round = 0;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>runningIntervals=true; phase='work'; leftInPhase=w; $('intervalState').textContent='работа'; $('intervalState').className='pill ok'; nextIntervalTick();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('btnIntervals').textContent='</span><span class="s3">■</span><span class="s1"> Спри интервали';</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">function stopIntervals(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>runningIntervals=false; clearTimeout(intervalTimer); $('intervalState').textContent='готов'; $('intervalTime').textContent='00:00'; $('intervalRound').textContent='0/'+totalRounds; $('btnIntervals').textContent='</span><span class="s3">▶︎</span><span class="s1"> Стартирай интервали';</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">function nextIntervalTick(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(!runningIntervals) return;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('intervalTime').textContent=fmt(leftInPhase);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('intervalRound').textContent=round+'/'+totalRounds;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(leftInPhase&lt;=0){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>// switch</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(phase==='work'){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>round++; if(round&gt;totalRounds){ stopIntervals(); return; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>phase='rest'; leftInPhase=Math.max(5, Number($('rest').value)||20);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>$('intervalState').textContent='почивка'; $('intervalState').className='pill warn';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>cue('Почивка – дишай.');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}else{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>phase='work'; leftInPhase=Math.max(5, Number($('work').value)||40);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>$('intervalState').textContent='работа'; $('intervalState').className='pill ok';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>cue('Работа – влез с инерция!');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>leftInPhase--;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>intervalTimer=setTimeout(nextIntervalTick,1000);</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">// Prompts</span></p>
+<p class="p1"><span class="s1">function parsePrompts(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>promptsList = $('prompts').value.split('\n').map(s=&gt;s.trim()).filter(Boolean);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(promptsList.length===0) promptsList=['TopRock','Knee Drop','Sweep Drop'];</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">function nextPrompt(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(promptsList.length===0) parsePrompts();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const i = Math.floor(Math.random()*promptsList.length);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>const p = promptsList[i];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('prompt').textContent = p;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>speak(p);</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">function startPrompts(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>parsePrompts();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>promptMode = $('mode').value;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>promptEvery = Math.max(1, Number($('everyN').value)||8);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>runningPrompts=true; beatsSince=0;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('btnPrompts').textContent='</span><span class="s3">■</span><span class="s1"> Спри команди';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(promptMode==='seconds'){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>promptTimer = setInterval(nextPrompt, promptEvery*1000);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}else{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>// on beats: will fire from metronome scheduler</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!runningMetro) startMetronome();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>nextPrompt();</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">function stopPrompts(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>runningPrompts=false; clearInterval(promptTimer); $('btnPrompts').textContent='</span><span class="s3">▶︎</span><span class="s1"> Пусни команди'; $('prompt').textContent='—';</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">function cue(text){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>$('status').textContent=text;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>try{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const u=new SpeechSynthesisUtterance(text); u.lang='bg-BG'; u.rate=1.05; speechSynthesis.cancel(); speechSynthesis.speak(u);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}catch(e){}</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">// All-in-one</span></p>
+<p class="p1"><span class="s1">$('btnIntervals').onclick=()=&gt; runningIntervals?stopIntervals():startIntervals();</span></p>
+<p class="p1"><span class="s1">$('btnPrompts').onclick=()=&gt; runningPrompts?stopPrompts():startPrompts();</span></p>
+<p class="p1"><span class="s1">$('btnNext').onclick=()=&gt; nextPrompt();</span></p>
+<p class="p1"><span class="s1">$('btnAllStart').onclick=()=&gt;{ if(!runningMetro) startMetronome(); if(!runningIntervals) startIntervals(); if(!runningPrompts) startPrompts(); };</span></p>
+<p class="p1"><span class="s1">$('btnAllStop').onclick=()=&gt;{ stopPrompts(); stopIntervals(); stopMetronome(); };</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">// defaults</span></p>
+<p class="p1"><span class="s1">$('intervalRound').textContent='0/'+($('rounds').value||6);</span></p>
+<p class="p1"><span class="s1">&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
 </body>
 </html>
