@@ -33,7 +33,6 @@
     .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .spacer { flex:1 }
   </style>
-  <!-- MediaPipe Tasks Vision bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -123,7 +122,7 @@ let running = false;
 let videoEl, canvasEl, ctx;
 let drawing;
 let lastVideoTime = -1;
-let lastStepSide = 0;
+let lastStepSide = 0; // -1 L, +1 R
 let lastStepTs = 0;
 let bpmAvg = [];
 
@@ -223,7 +222,7 @@ const MOVES = {
   }
 };
 
-// --- Transition scorer and profiles ---
+// --- Transition profiles ---
 const TRANSITIONS = {
   transition_ts: {
     name: "TopRock → Squat",
@@ -240,8 +239,8 @@ const TRANSITIONS = {
     boundary(lm, prev){
       const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
       const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
-      const hipBelowKnee = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.98);
       const sharpFlex = (kneeAngleL<75) || (kneeAngleR<75);
+      const hipBelowKnee = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.98);
       try{ return prev && sharpFlex && hipBelowKnee(lm); }catch(e){ return false; }
     }
   },
@@ -277,7 +276,7 @@ const TRANSITIONS = {
       const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
       const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
       const sharpFlex = (kneeAngleL<75) || (kneeAngleR<75);
-      const hipBelowKnee = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KНЕЕ].y*0.98);
+      const hipBelowKnee = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.98);
       try{ return prev && sharpFlex && hipBelowKnee(lm); }catch(e){ return false; }
     }
   },
@@ -286,12 +285,12 @@ const TRANSITIONS = {
     type: "standing",
     boundary(lm, prev){
       function ankleSpeed(curr, prev, side){
-        const A = side==='L'? LM.LEFT_ANKLE : LM.RIGHT_АНКLE;
+        const A = side==='L'? LM.LEFT_ANKLE : LM.RIGHT_ANKLE;
         const dx = Math.abs(curr[A].x - prev[A].x);
         const dy = Math.abs(curr[A].y - prev[A].y);
         return Math.hypot(dx,dy);
       }
-      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEЕ].y*0.96);
+      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
       try{
         if(!prev) return false;
         const vL = ankleSpeed(lm, prev, 'L');
@@ -306,10 +305,10 @@ const TRANSITIONS = {
     type: "standing",
     boundary(lm, prev){
       function shoulderAngle(p){
-        const v = vec(p[LM.LEFT_SHOULDER], p[LM.RIGHT_SHОULDER]);
+        const v = vec(p[LM.LEFT_SHOULDER], p[LM.RIGHT_SHOULDER]);
         return Math.atan2(v.y, v.x);
       }
-      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEЕ].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
+      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
       try{
         if(!prev) return false;
         const a0 = shoulderAngle(prev), a1 = shoulderAngle(lm);
@@ -328,7 +327,7 @@ const TRANSITIONS = {
       const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);
       const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);
       const sharpFlex = (kneeAngleL<85) || (kneeAngleR<85);
-      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEЕ].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
+      const hipsLow = (c)=> (c[LM.LEFT_HIP].y > c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y > c[LM.RIGHT_KNEE].y*0.96);
       try{ return prev && anklesCross(lm) && sharpFlex && hipsLow(lm); }catch(e){ return false; }
     }
   },
@@ -342,8 +341,8 @@ const TRANSITIONS = {
         return Math.abs(hC.y - hP.y);
       }
       function ankleDelta(curr, prev){
-        const dL = Math.hypot(curr[LM.LEFT_ANKLE].x - prev[LM.LEFT_АНКLE].x, curr[LM.LEFT_АНКLE].y - prev[LM.LEFT_АНКLE].y);
-        const dR = Math.hypот(curr[LM.RIGHT_АНКLE].x - prev[LM.RIGHT_АНКLE].x, curr[LM.RIGHT_АНКLE].y - prev[LM.RIGHT_АНКLE].y);
+        const dL = Math.hypot(curr[LM.LEFT_ANKLE].x - prev[LM.LEFT_ANKLE].x, curr[LM.LEFT_ANKLE].y - prev[LM.LEFT_ANKLE].y);
+        const dR = Math.hypot(curr[LM.RIGHT_ANKLE].x - prev[LM.RIGHT_ANKLE].x, curr[LM.RIGHT_ANKLE].y - prev[LM.RIGHT_ANKLE].y);
         return (dL + dR)/2;
       }
       try{
@@ -358,8 +357,8 @@ const TRANSITIONS = {
     name: "TopRock → Roll Drop",
     type: "standing",
     boundary(lm, prev){
-      const shoulderLow = (c)=> (c[LM.LEFT_SHOULDER].y > c[LM.LEFT_KNEЕ].y) || (c[LM.RIGHT_SHOULDER].y > c[LM.RIGHT_KNEЕ].y);
-      const wristsLow = (c)=> (c[LM.LEFT_WRIST].y > c[LM.LEFT_KNEЕ].y*0.98) || (c[LM.RIGHT_WRIST].y > c[LM.RIGHT_KNEЕ].y*0.98);
+      const shoulderLow = (c)=> (c[LM.LEFT_SHOULDER].y > c[LM.LEFT_KNEE].y) || (c[LM.RIGHT_SHOULDER].y > c[LM.RIGHT_KNEE].y);
+      const wristsLow = (c)=> (c[LM.LEFT_WRIST].y > c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_WRIST].y > c[LM.RIGHT_KNEE].y*0.98);
       try{ return prev && shoulderLow(lm) && wristsLow(lm); }catch(e){ return false; }
     }
   },
@@ -368,11 +367,11 @@ const TRANSITIONS = {
     type: "standing",
     boundary(lm, prev){
       function torsoTilt(curr){
-        const s = mid(curr[LM.LEFT_SHOULDER], curr[LM.RIGHT_SHОULDER]);
+        const s = mid(curr[LM.LEFT_SHOULDER], curr[LM.RIGHT_SHOULDER]);
         const h = mid(curr[LM.LEFT_HIP], curr[LM.RIGHT_HIP]);
         const v = {x: s.x-h.x, y: s.y-h.y};
         const up = {x:0, y:-1};
-        const cos = (v.x*up.x + v.y*up.y) / (Math.hypot(v.x,v.y)*1 + 1e-6);
+        const cos = (dot(v,up)) / (Math.hypot(v.x,v.y)*1 + 1e-6);
         return Math.acos(Math.min(1, Math.max(-1, cos))) * 180/Math.PI;
       }
       const wristsLow = (c)=> (c[LM.LEFT_WRIST].y > c[LM.LEFT_HIP].y*0.98) || (c[LM.RIGHT_WRIST].y > c[LM.RIGHT_HIP].y*0.98);
@@ -395,9 +394,9 @@ let boundaryTs = null;
 function com(lm){ return mid(lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP]); }
 function horizSpeed(a,b,dt){ if(!a || !b || dt<=0) return 0; return Math.abs(b.x - a.x) / dt; }
 function angleShoulderHipAnkle(lm, left=true){
-  const S = left ? LM.LEFT_SHOULDER : LM.RIGHT_SHОULDER;
+  const S = left ? LM.LEFT_SHOULDER : LM.RIGHT_SHOULDER;
   const H = left ? LM.LEFT_HIP : LM.RIGHT_HIP;
-  const A = left ? LM.LEFT_АНКLE : LM.RIGHT_АНКLE;
+  const A = left ? LM.LEFT_ANKLE : LM.RIGHT_ANKLE;
   return angle(lm[S], lm[H], lm[A]);
 }
 function lowPass(arr, k=5){
@@ -407,101 +406,16 @@ function lowPass(arr, k=5){
   return s/n;
 }
 
-function detectBoundary(lm){
-  const prof = getTransitionProfile(document.getElementById('move').value);
-  return prof.boundary(lm, prevLm);
-}
-
-function transitionMetrics(lm, ts){
-  const prof = getTransitionProfile(document.getElementById('move').value);
-  if(prevLm && prevTs){
-    const dt = (ts - prevTs);
-    if(prof.type === 'floor'){
-      const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
-      const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
-      const aVel = Math.abs(aNow - aPrev)/Math.max(1e-3, dt);
-      speedHist.push(aVel/180); if(speedHist.length>60) speedHist.shift();
-      const n = speedHist.length;
-      if(n>=2){
-        const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/Math.max(1e-3, dt);
-        jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift();
-      }
-      angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
-    } else {
-      const cPrev = com(prevLm);
-      const cNow = com(lm);
-      const v = horizSpeed(cPrev, cNow, Math.max(1e-3, dt));
-      speedHist.push(v); if(speedHist.length>60) speedHist.shift();
-      const n = speedHist.length;
-      if(n>=2){
-        const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/Math.max(1e-3, dt);
-        jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift();
-      }
-      const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
-      const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
-      const aVel = Math.abs(aNow - aPrev)/Math.max(1e-3, dt);
-      angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
-    }
-  }
-  prevLm = lm; prevTs = ts;
-}
-
-function transitionScoreAndTips(){
-  if(boundaryTs===null){
-    const s = lowPass(speedHist, 10);
-    const tips = [];
-    if(s<0.002) tips.push("Подготви входа: движи центъра/ъгъла плавно.");
-    tips.push("Влез без да губиш инерция.");
-    return {score: Math.round(Math.min(100, s*60000)), tips};
-  }
-  const N = Math.min(speedHist.length, 36);
-  const half = Math.floor(N/2);
-  const pre = speedHist.slice(Math.max(0,speedHist.length-N), Math.max(0,speedHist.length-N)+half);
-  const post = speedHist.slice(Math.max(0,speedHist.length-N)+half);
-  const sPre = pre.length ? pre.reduce((a,b)=>a+b,0)/pre.length : 0;
-  const sPost = post.length ? post.reduce((a,b)=>a+b,0)/post.length : 0;
-  const jerkAvg = jerkHist.slice(-N).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(N,jerkHist.length));
-  const angleVel = angleVelHist.slice(-N).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(N,angleVelHist.length));
-
-  const retention = sPre>0 ? (sPost/sPre) : 0;
-  const jerkScore = Math.max(0, 1 - (jerkAvg / 0.08));
-  const angScore = Math.max(0, 1 - (angleVel / 180));
-
-  const combined = (0.5*retention + 0.3*jerkScore + 0.2*angScore);
-  const score = Math.round(100 * Math.max(0, Math.min(1, combined)));
-
-  const tips = [];
-  if(retention<0.7) tips.push("Запази скоростта през входа.");
-  if(jerkScore<0.7) tips.push("Омекоти рязката промяна.");
-  if(angScore<0.7) tips.push("Плавни ъгли в прехода.");
-
-  return {score, tips};
-}
-
-function scoreAndTips(lm, moveId){
-  const move = MOVES[moveId];
-  const tips = [];
-  let okCount = 0;
-  for(const c of move.constraints){
-    const pass = safeTest(()=>c.test(lm));
-    if(pass) okCount++; else tips.push(c.tip);
-  }
-  const score = Math.round(100 * okCount / move.constraints.length);
-  return {score, tips};
-}
-function safeTest(fn){ try{ return !!fn(); } catch(e){ return false; } }
-
 async function init(){
   videoEl = document.getElementById('video');
   canvasEl = document.getElementById('overlay');
   ctx = canvasEl.getContext('2d');
   drawing = new DrawingUtils(ctx);
-  updateMirror();
 
-  setStatus('зарежда модел…'); if(!window.isSecureContext){ logMsg('⚠ file:// режим може да блокира камерата. Ползвай HTTPS или локален сървър.'); }
-  const vision = await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-  );
+  updateMirror();
+  setStatus('зарежда модел…'); if(!window.isSecureContext){ logMsg('⚠ file:// може да блокира камерата. Ползвай HTTPS или локален сървър.'); }
+
+  const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
   try {
     landmarker = await PoseLandmarker.createFromOptions(vision, {
       baseOptions: {
@@ -529,13 +443,11 @@ function updateMirror(){
 async function startCamera(){
   if(!window.isSecureContext){
     setStatus("Нужно е HTTPS или localhost, иначе камерата е блокирана.");
-    logMsg("Съвет: отвори файла от https (напр. GitHub Pages) или през локален сървър.");
-    alert("Камерата е блокирана за file:// страници. Ползвай HTTPS или локален сървър.");
+    logMsg("Съвет: отвори файла по HTTPS или през локален сървър.");
+    alert("Камерата е блокирана за file:// страници.");
   }
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    setStatus("getUserMedia не е налично в този браузър.");
-    alert("Този браузър не поддържа камерата през getUserMedia.");
-    return;
+    setStatus("getUserMedia не е налично в този браузър."); return;
   }
   const desiredFacing = document.getElementById('facing').value;
   let constraintsList = [
@@ -554,19 +466,11 @@ async function startCamera(){
 
   let stream = null;
   for(const c of constraintsList){
-    try{
-      stream = await navigator.mediaDevices.getUserMedia(c);
-      logMsg("Камера стартира с: "+JSON.stringify(c));
-      break;
-    }catch(err){
-      logMsg("Провал с "+JSON.stringify(c)+": "+err.name+" / "+err.message);
-    }
+    try{ stream = await navigator.mediaDevices.getUserMedia(c); logMsg("Камера стартира с: "+JSON.stringify(c)); break; }
+    catch(err){ logMsg("Провал с "+JSON.stringify(c)+": "+err.name+" / "+err.message); }
   }
-  if(!stream){
-    setStatus("Грешка при достъп до камерата. Провери разрешенията в Settings > Apps > Browser > Permissions > Camera.");
-    alert("Камерата не може да се стартира. Провери разрешенията.");
-    return;
-  }
+  if(!stream){ setStatus("Грешка при достъп до камерата."); return; }
+
   try{
     videoEl.srcObject = stream;
     await new Promise(res => videoEl.onloadeddata = res);
@@ -575,9 +479,7 @@ async function startCamera(){
     running = true;
     setStatus("камера: активна");
     predictLoop();
-  }catch(e){
-    setStatus("Проблем при инициализация на видео: "+e.message);
-  }
+  }catch(e){ setStatus("Проблем при инициализация на видео: "+e.message); }
 }
 
 function setScore(val){
@@ -587,14 +489,12 @@ function setScore(val){
   if(!isFinite(val)) return;
   el.classList.add(val>=80 ? 'good' : val>=60 ? 'ok' : 'bad');
 }
-
 function setTempo(val){
   const el = document.getElementById('tempo');
   if(!val){ el.textContent = '—'; return; }
   const avg = bpmAvg.length ? (bpmAvg.reduce((a,b)=>a+b,0)/bpmAvg.length) : val;
   el.textContent = Math.round(avg) + ' стъпки/мин';
 }
-
 function setTips(list){
   const el = document.getElementById('tips');
   el.innerHTML = '';
@@ -604,94 +504,136 @@ function setTips(list){
     d.textContent = t;
     el.appendChild(d);
   });
-  if(list.length && document.getElementById('voice').checked){
-    speak(list[0]);
-  }
+  if(list.length && document.getElementById('voice').checked){ speak(list[0]); }
 }
+
+function transitionScoreAndTips(){
+  if(boundaryTs===null){
+    const s = lowPass(speedHist, 10);
+    const tips = [];
+    if(s<0.002) tips.push("Подготви входа: движи центъра/ъгъла плавно.");
+    tips.push("Влез без да губиш инерция.");
+    return {score: Math.round(Math.min(100, s*60000)), tips};
+  }
+  const N = Math.min(speedHist.length, 36);
+  const half = Math.floor(N/2);
+  const pre = speedHist.slice(Math.max(0,speedHist.length-N), Math.max(0,speedHist.length-N)+half);
+  const post = speedHist.slice(Math.max(0,speedHist.length-N)+half);
+  const sPre = pre.length ? pre.reduce((a,b)=>a+b,0)/pre.length : 0;
+  const sPost = post.length ? post.reduce((a,b)=>a+b,0)/post.length : 0;
+  const jerkAvg = (jerkHist.slice(-N).reduce((a,b)=>a+b,0))/Math.max(1,Math.min(N,jerkHist.length));
+  const angleVel = (angleVelHist.slice(-N).reduce((a,b)=>a+b,0))/Math.max(1,Math.min(N,angleVelHist.length));
+
+  const retention = sPre>0 ? (sPost/sPre) : 0;
+  const jerkScore = Math.max(0, 1 - (jerkAvg / 0.08));
+  const angScore = Math.max(0, 1 - (angleVel / 180));
+  const combined = (0.5*retention + 0.3*jerkScore + 0.2*angScore);
+  const score = Math.round(100 * Math.max(0, Math.min(1, combined)));
+
+  const tips = [];
+  if(retention<0.7) tips.push("Запази скоростта през входа.");
+  if(jerkScore<0.7) tips.push("Омекоти рязката промяна.");
+  if(angScore<0.7) tips.push("Плавни ъгли в прехода.");
+
+  return {score, tips};
+}
+
+function scoreAndTips(lm, moveId){
+  const move = MOVES[moveId];
+  const tips = [];
+  let okCount = 0;
+  for(const c of move.constraints){
+    const pass = safeTest(()=>c.test(lm));
+    if(pass) okCount++; else tips.push(c.tip);
+  }
+  const score = Math.round(100 * okCount / move.constraints.length);
+  return {score, tips};
+}
+function safeTest(fn){ try{ return !!fn(); } catch(e){ return false; } }
 
 async function predictLoop(){
   if(!running) return;
   const now = performance.now();
+
   if(videoEl.currentTime !== lastVideoTime){
     lastVideoTime = videoEl.currentTime;
-    landmarker.detectForVideo(videoEl, now, (res)=>{
-      ctx.clearRect(0,0,canvasEl.width, canvasEl.height);
-      if(res && res.landmarks && res.landmarks[0]){
-        const lm = res.landmarks[0];
-        drawing.drawLandmarks(lm, { radius: (data)=> DrawingUtils.lerp(data.from?.z ?? 0, -0.15, 0.1, 5, 1) });
-        drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS);
 
-        const moveId = document.getElementById('move').value;
+    // ✅ правилно използване на API-то:
+    const res = landmarker.detectForVideo(videoEl, now);
 
-        if(moveId.startsWith('transition_')){
-          const prof = getTransitionProfile(moveId);
-          const nowTs = performance.now()/1000;
+    ctx.clearRect(0,0,canvasEl.width, canvasEl.height);
+    if(res && res.landmarks && res.landmarks[0]){
+      const lm = res.landmarks[0];
+      drawing.drawLandmarks(lm, { radius: (data)=> DrawingUtils.lerp(data.from?.z ?? 0, -0.15, 0.1, 5, 1) });
+      drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS);
 
-          if(prof.boundary(lm, prevLm) && boundaryTs===null){ boundaryTs = nowTs; speak("Вход!"); }
+      const moveId = document.getElementById('move').value;
 
-          const dt = (prevTs? nowTs - prevTs : 0.033);
-          if(prevLm && dt>0){
-            if(prof.type === 'floor'){
-              const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
-              const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
-              const aVel = Math.abs(aNow - aPrev)/dt;
-              speedHist.push(aVel/180); if(speedHist.length>60) speedHist.shift();
-              const n = speedHist.length;
-              if(n>=2){
-                const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt;
-                jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift();
-              }
-              angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
-            } else {
-              const cPrev = com(prevLm); const cNow = com(lm);
-              const v = horizSpeed(cPrev, cNow, dt);
-              speedHist.push(v); if(speedHist.length>60) speedHist.shift();
-              const n = speedHist.length;
-              if(n>=2){
-                const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt;
-                jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift();
-              }
-              const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
-              const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
-              const aVel = Math.abs(aNow - aPrev)/dt;
-              angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
-            }
+      if(moveId.startsWith('transition_')){
+        const prof = getTransitionProfile(moveId);
+        const nowTs = performance.now()/1000;
+
+        if(prof.boundary(lm, prevLm) && boundaryTs===null){ boundaryTs = nowTs; speak("Вход!"); }
+
+        const dt = (prevTs? nowTs - prevTs : 0.033);
+        if(prevLm && dt>0){
+          if(prof.type === 'floor'){
+            const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
+            const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
+            const aVel = Math.abs(aNow - aPrev)/dt;
+            speedHist.push(aVel/180); if(speedHist.length>60) speedHist.shift();
+            const n = speedHist.length;
+            if(n>=2){ const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt; jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift(); }
+            angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
+          } else {
+            const cPrev = com(prevLm); const cNow = com(lm);
+            const v = horizSpeed(cPrev, cNow, dt);
+            speedHist.push(v); if(speedHist.length>60) speedHist.shift();
+            const n = speedHist.length;
+            if(n>=2){ const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt; jerkHist.push(jerk); if(jerkHist.length>60) jerkHist.shift(); }
+            const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));
+            const aNow  = 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));
+            const aVel = Math.abs(aNow - aPrev)/dt;
+            angleVelHist.push(aVel); if(angleVelHist.length>60) angleVelHist.shift();
           }
-          prevLm = lm; prevTs = nowTs;
-
-          const {score, tips} = transitionScoreAndTips();
-          if(moveId==='transition_indian_kneedrop') tips.unshift("Свали коляното плавно в такт.");
-          if(moveId==='transition_toprock_drop') tips.unshift("Пусни ръце към пода без спиране.");
-          if(moveId==='transition_sixstep_babyfreeze') tips.unshift("Претегли на ръце и заключи бебе-фрийза гладко.");
-          if(moveId==='transition_toprock_kneedrop') tips.unshift("Меки колене, пази инерцията към пода.");
-          if(moveId==='transition_toprock_sweepdrop') tips.unshift("Широк sweep и плавен контрол към пода.");
-          if(moveId==='transition_toprock_spindrop') tips.unshift("Поддържай въртенето – не спирай преди спускането.");
-          if(moveId==='transition_toprock_hookdrop') tips.unshift("Хукът да е ясен, но без блокиране.");
-          if(moveId==='transition_toprock_collapsedrop') tips.unshift("Изглеждай като „падане“, но без да губиш flow.");
-          if(moveId==='transition_toprock_rolldrop') tips.unshift("Снизход през рамо, задръж кръговата енергия.");
-          if(moveId==='transition_toprock_suicidedrop') tips.unshift("Комитнат вход, после стабилен контрол.");
-          setScore(score); setTips(tips); setTempo(null);
-        } else {
-          boundaryTs = null; prevLm=null; prevTs=0; speedHist.length=0; jerkHist.length=0; angleVelHist.length=0;
-          const {score, tips} = scoreAndTips(lm, moveId);
-          setScore(score); setTips(tips);
-          if(moveId === 'toprock' && MOVES.toprock.stepDetector){
-            const bpm = MOVES.toprock.stepDetector(lm, performance.now()/1000);
-            if(bpm) setTempo(bpm);
-          } else { setTempo(null); }
         }
+        prevLm = lm; prevTs = nowTs;
+
+        const {score, tips} = transitionScoreAndTips();
+        if(moveId==='transition_indian_kneedrop') tips.unshift("Свали коляното плавно в такт.");
+        if(moveId==='transition_toprock_drop') tips.unshift("Пусни ръце към пода без спиране.");
+        if(moveId==='transition_sixstep_babyfreeze') tips.unshift("Претегли на ръце и заключи бебе-фрийза гладко.");
+        if(moveId==='transition_toprock_kneedrop') tips.unshift("Меки колене, пази инерцията към пода.");
+        if(moveId==='transition_toprock_sweepdrop') tips.unshift("Широк sweep и плавен контрол към пода.");
+        if(moveId==='transition_toprock_spindrop') tips.unshift("Поддържай въртенето – не спирай преди спускането.");
+        if(moveId==='transition_toprock_hookdrop') tips.unshift("Хукът да е ясен, но без блокиране.");
+        if(moveId==='transition_toprock_collapsedrop') tips.unshift("Изглеждай като „падане“, но без да губиш flow.");
+        if(moveId==='transition_toprock_rolldrop') tips.unshift("Снизход през рамо, задръж кръговата енергия.");
+        if(moveId==='transition_toprock_suicidedrop') tips.unshift("Комитнат вход, после стабилен контрол.");
+        setScore(score); setTips(tips); setTempo(null);
+
       } else {
-        setScore(NaN);
-        setTips(["Покажи цяло тяло в кадър."]);
-        setTempo(null);
+        boundaryTs = null; prevLm=null; prevTs=0; speedHist.length=0; jerkHist.length=0; angleVelHist.length=0;
+        const {score, tips} = scoreAndTips(lm, moveId);
+        setScore(score); setTips(tips);
+        if(moveId === 'toprock' && MOVES.toprock.stepDetector){
+          const bpm = MOVES.toprock.stepDetector(lm, performance.now()/1000);
+          if(bpm) setTempo(bpm);
+        } else { setTempo(null); }
       }
-    });
+    } else {
+      setScore(NaN);
+      setTips(["Покажи цяло тяло в кадър."]);
+      setTempo(null);
+    }
   }
   requestAnimationFrame(predictLoop);
 }
 
 document.getElementById('btnStart').addEventListener('click', startCamera);
 document.getElementById('mirror').addEventListener('change', updateMirror);
+
+function safeTest(fn){ try{ return !!fn(); } catch(e){ return false; } }
 
 init();
 </script>
