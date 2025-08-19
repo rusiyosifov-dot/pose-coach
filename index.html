@@ -1,0 +1,718 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1561.61">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+    span.s1 {font: 12.0px 'Apple Color Emoji'}
+    span.s2 {font: 12.0px 'Lucida Grande'}
+    span.s3 {font: 12.0px 'Hiragino Sans'}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="bg"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Pocket Pose Coach&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="description" content="Он-лайн треньор за поза и преходи с инерция. Работи изцяло на устройството."/&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>:root { --bg:#0b0b0f; --fg:#e7e7ea; --muted:#9aa0a6; --accent:#7bc8ff; --bad:#ff6b6b; --ok:#ffd166; --good:#06d6a0; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>* { box-sizing: border-box; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; background:var(--bg); color:var(--fg); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header { padding: 14px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #23242a; position:sticky; top:0; background:rgba(11,11,15,0.9); backdrop-filter:saturate(150%) blur(8px); z-index:10; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header h1 { font-size: 18px; margin: 0; letter-spacing: 0.5px;}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>main { display:grid; grid-template-columns: 1fr; gap: 12px; padding: 12px; max-width: 980px; margin: 0 auto; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>#stage { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden; background:#0e1117; box-shadow: 0 8px 30px rgba(0,0,0,.35); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>video { position:absolute; inset:0; width:100%; height:100%; object-fit: cover; transform: scaleX(-1); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; transform: scaleX(-1); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.toolbar &gt; * { flex: none; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>select, button, input[type="checkbox"]+label { border:1px solid #2a2b31; background:#14151b; color:var(--fg); padding:10px 12px; border-radius:12px; font-size:14px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>button.primary { background:linear-gradient(180deg, #2b9eff, #0078ff); border:none; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.pill { padding:6px 10px; background:#14151b; border:1px solid #2a2b31; border-radius:999px; font-size:12px; color:var(--muted); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.card { background:#0f1218; border:1px solid #1e222b; border-radius:16px; padding:12px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.score { font-size: 28px; font-weight:700; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.score.good { color:var(--good); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.score.ok { color:var(--ok); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.score.bad { color:var(--bad); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tips { display:flex; gap:8px; flex-wrap:wrap; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.tip { font-size:12px; padding:8px 10px; border-radius:10px; border:1px dashed #2a2b31; background:#12141a; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>footer { padding:10px 16px; color:var(--muted); text-align:center; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.small { font-size:12px; color:var(--muted); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.spacer { flex:1 }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;!-- MediaPipe Tasks Vision bundle --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js" crossorigin="anonymous"&gt;&lt;/script&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;header&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1&gt;<span class="s1">🎥</span> Pocket Pose Coach&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;span class="pill"&gt;он-устройство · без облак&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;span class="pill" id="status"&gt;зарежда модел…&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;span class="spacer"&gt;&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="btnStart" class="primary"&gt;Старт камера&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/header&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;main&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="stage"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;video id="video" autoplay playsinline muted&gt;&lt;/video&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;canvas id="overlay"&gt;&lt;/canvas&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="toolbar"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;label for="facing"&gt;Камера:&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;select id="facing"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="environment"&gt;Задна&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="user"&gt;Предна&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/select&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;label for="move"&gt;Движение:&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;select id="move"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="toprock"&gt;Top Rock (basic) — бета&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="squat"&gt;Клек&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="plank"&gt;Планк&lt;/option&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_ts"&gt;Transition: TopRock <span class="s2">→</span> Squat&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_indian_kneedrop"&gt;Transition: Indian Step <span class="s2">→</span> Knee Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_drop"&gt;Transition: TopRock <span class="s2">→</span> Drop to Floor&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_sixstep_babyfreeze"&gt;Transition: Six-Step <span class="s2">→</span> Baby Freeze&lt;/option&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_kneedrop"&gt;Transition: TopRock <span class="s2">→</span> Knee Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_sweepdrop"&gt;Transition: TopRock <span class="s2">→</span> Sweep Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_spindrop"&gt;Transition: TopRock <span class="s2">→</span> Spin Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_hookdrop"&gt;Transition: TopRock <span class="s2">→</span> Hook Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_collapsedrop"&gt;Transition: TopRock <span class="s2">→</span> Collapse Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_rolldrop"&gt;Transition: TopRock <span class="s2">→</span> Roll Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;option value="transition_toprock_suicidedrop"&gt;Transition: TopRock <span class="s2">→</span> Suicide Drop&lt;/option&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/select&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input id="voice" type="checkbox" checked /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label for="voice"&gt;Гласови съвети&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="row"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;input id="mirror" type="checkbox" checked /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;label for="mirror"&gt;Огледален режим&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;&lt;div&gt;&lt;b&gt;Статус / Лог&lt;/b&gt;&lt;/div&gt;&lt;div id="log" class="small" style="white-space:pre-wrap; max-height:120px; overflow:auto; margin-top:6px;"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="grid"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div&gt;Оценка&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="score" class="score"&gt;—&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="small"&gt;0–59: нужда от корекции · 60–79: ок · 80–100: отлично&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="row"&gt;&lt;b&gt;Ритъм&lt;/b&gt; &lt;span class="spacer"&gt;&lt;/span&gt;&lt;span id="tempo" class="pill"&gt;—&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="small"&gt;Само за Top Rock: приблизителни стъпки в минута&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div&gt;Съвети в реално време&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div id="tips" class="tips"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;footer class="small"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>Работи с &lt;a href="https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker/web_js" target="_blank" rel="noreferrer"&gt;MediaPipe Pose Landmarker&lt;/a&gt;.</p>
+<p class="p1"><span class="Apple-converted-space">      </span>Данните не напускат устройството.</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/footer&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/main&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1">const { FilesetResolver, PoseLandmarker, DrawingUtils } = window;</p>
+<p class="p1">function logMsg(t){ try{ const el=document.getElementById("log"); if(el){ el.textContent += (t+"\\n"); el.scrollTop = el.scrollHeight; } }catch(e){} }</p>
+<p class="p1">function setStatus(t){ const el=document.getElementById("status"); if(el) el.textContent=t; logMsg(t); }</p>
+<p class="p2"><br></p>
+<p class="p1">let landmarker = null;</p>
+<p class="p1">let running = false;</p>
+<p class="p1">let videoEl, canvasEl, ctx;</p>
+<p class="p1">let drawing;</p>
+<p class="p1">let lastVideoTime = -1;</p>
+<p class="p1">let lastStepSide = 0;</p>
+<p class="p1">let lastStepTs = 0;</p>
+<p class="p1">let bpmAvg = [];</p>
+<p class="p2"><br></p>
+<p class="p1">const LM = {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>NOSE:0, LEFT_SHOULDER:11, RIGHT_SHOULDER:12, LEFT_ELBOW:13, RIGHT_ELBOW:14,</p>
+<p class="p1"><span class="Apple-converted-space">  </span>LEFT_WRIST:15, RIGHT_WRIST:16, LEFT_HIP:23, RIGHT_HIP:24, LEFT_KNEE:25, RIGHT_KNEE:26,</p>
+<p class="p1"><span class="Apple-converted-space">  </span>LEFT_ANKLE:27, RIGHT_ANKLE:28</p>
+<p class="p1">};</p>
+<p class="p2"><br></p>
+<p class="p1">function vec(a,b){ return {x:b.x-a.x, y:b.y-a.y}; }</p>
+<p class="p1">function mag(v){ return Math.hypot(v.x, v.y); }</p>
+<p class="p1">function dot(a,b){ return a.x*b.x + a.y*b.y; }</p>
+<p class="p1">function angle(a,b,c){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const v1 = vec(b,a), v2 = vec(b,c);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const cos = (dot(v1,v2)) / (mag(v1)*mag(v2) + 1e-6);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return Math.acos(Math.min(1, Math.max(-1, cos))) * 180/Math.PI;</p>
+<p class="p1">}</p>
+<p class="p1">function torsoTiltDeg(lm){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const s = mid(lm[LM.LEFT_SHOULDER], lm[LM.RIGHT_SHOULDER]);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const h = mid(lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP]);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const v = {x: s.x-h.x, y: s.y-h.y};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const up = {x:0, y:-1};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const cos = (dot(v,up)) / (mag(v)*mag(up) + 1e-6);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return Math.acos(Math.min(1, Math.max(-1, cos))) * 180/Math.PI;</p>
+<p class="p1">}</p>
+<p class="p1">function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }</p>
+<p class="p1">function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }</p>
+<p class="p1">function within(val, min, max){ return val&gt;=min &amp;&amp; val&lt;=max; }</p>
+<p class="p2"><br></p>
+<p class="p1">function speak(txt){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!document.getElementById('voice').checked) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const u = new SpeechSynthesisUtterance(txt);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>u.lang = 'bg-BG';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>u.rate = 1.0;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>window.speechSynthesis.cancel();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>window.speechSynthesis.speak(u);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}catch(e){}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">const MOVES = {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>squat: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "Клек",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>constraints: [</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"back", test:(lm)=&gt; torsoTiltDeg(lm) &lt; 15, tip:"Изправи торса (&lt;15° наклон)." },</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"kneesLeft", test:(lm)=&gt; Math.abs(lm[LM.LEFT_KNEE].x - lm[LM.LEFT_ANKLE].x) &lt; 0.06, tip:"Лявото коляно да е над стъпалото." },</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"kneesRight", test:(lm)=&gt; Math.abs(lm[LM.RIGHT_KNEE].x - lm[LM.RIGHT_ANKLE].x) &lt; 0.06, tip:"Дясното коляно да е над стъпалото." },</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"depth", test:(lm)=&gt; (lm[LM.LEFT_HIP].y &lt; lm[LM.LEFT_KNEE].y) || (lm[LM.RIGHT_HIP].y &lt; lm[LM.RIGHT_KNEE].y), tip:"Слязъл/а си недостатъчно (бедрото под хоризонтала)." }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>]</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>plank: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name:"Планк",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>constraints:[</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"line", test:(lm)=&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const a = angle(lm[LM.LEFT_SHOULDER], lm[LM.LEFT_HIP], lm[LM.LEFT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const b = angle(lm[LM.RIGHT_SHOULDER], lm[LM.RIGHT_HIP], lm[LM.RIGHT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>return within(a,165,180) &amp;&amp; within(b,165,180);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}, tip:"Една линия от рамо до глезен." },</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"hips", test:(lm)=&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const s = mid(lm[LM.LEFT_SHOULDER], lm[LM.RIGHT_SHOULDER]);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const h = mid(lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP]);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const ratio = (h.y - s.y);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>return ratio &gt; 0.10 &amp;&amp; ratio &lt; 0.28;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}, tip:"Не вдигай/сваляй таза." }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>]</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>toprock: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name:"Top Rock (basic)",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>constraints:[</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"shoulders", test:(lm)=&gt; Math.abs(lm[LM.LEFT_SHOULDER].y - lm[LM.RIGHT_SHOULDER].y) &lt; 0.06, tip:"Дръж раменете хоризонтално." },</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"stance", test:(lm)=&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const shoulderW = Math.abs(lm[LM.LEFT_SHOULDER].x - lm[LM.RIGHT_SHOULDER].x);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const footW = Math.abs(lm[LM.LEFT_ANKLE].x - lm[LM.RIGHT_ANKLE].x);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>return footW &gt;= 0.75*shoulderW;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}, tip:"Отвори стъпката ≥ ширина на рамене." },</p>
+<p class="p1"><span class="Apple-converted-space">      </span>{ id:"upright", test:(lm)=&gt; torsoTiltDeg(lm) &lt; 20, tip:"Изправи торса." }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>],</p>
+<p class="p1"><span class="Apple-converted-space">    </span>stepDetector:(lm, ts)=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const diff = lm[LM.RIGHT_ANKLE].x - lm[LM.LEFT_ANKLE].x;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const side = diff &gt; 0.08 ? +1 : (diff &lt; -0.08 ? -1 : 0);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let bpm = null;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(side !== 0 &amp;&amp; side !== lastStepSide){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const now = ts;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if(lastStepTs&gt;0){</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const dt = (now - lastStepTs)/1000;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const spm = 60/dt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const stepsPerMin = spm * 1.0;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>bpm = stepsPerMin;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>bpmAvg.push(stepsPerMin);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(bpmAvg.length&gt;6) bpmAvg.shift();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>lastStepTs = now;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>lastStepSide = side;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>return bpm;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">};</p>
+<p class="p2"><br></p>
+<p class="p1">// --- Transition scorer and profiles ---</p>
+<p class="p1">const TRANSITIONS = {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_ts: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Squat",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipAbove = (p)=&gt; (p[LM.LEFT_HIP].y &lt; p[LM.LEFT_KNEE].y*0.98) &amp;&amp; (p[LM.RIGHT_HIP].y &lt; p[LM.RIGHT_KNEE].y*0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipBelow = (c)=&gt; (c[LM.LEFT_HIP].y &gt; c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y &gt; c[LM.RIGHT_KNEE].y*0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{ return prev &amp;&amp; hipAbove(prev) &amp;&amp; hipBelow(lm); }catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_indian_kneedrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "Indian Step <span class="s2">→</span> Knee Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipBelowKnee = (c)=&gt; (c[LM.LEFT_HIP].y &gt; c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y &gt; c[LM.RIGHT_KNEE].y*0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const sharpFlex = (kneeAngleL&lt;75) || (kneeAngleR&lt;75);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{ return prev &amp;&amp; sharpFlex &amp;&amp; hipBelowKnee(lm); }catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_drop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Drop to Floor",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const handsLow = (c)=&gt; (c[LM.LEFT_WRIST].y &gt; c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_WRIST].y &gt; c[LM.RIGHT_KNEE].y*0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipsLow = (c)=&gt; (c[LM.LEFT_HIP].y &gt; c[LM.LEFT_KNEE].y*0.95) || (c[LM.RIGHT_HIP].y &gt; c[LM.RIGHT_KNEE].y*0.95);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{ return prev &amp;&amp; handsLow(lm) &amp;&amp; hipsLow(lm); }catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_sixstep_babyfreeze: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "Six-Step <span class="s2">→</span> Baby Freeze",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "floor",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function near(a,b){ return dist(a,b) &lt; 0.10; }</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const oppClose1 = near(lm[LM.LEFT_WRIST], lm[LM.RIGHT_KNEE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const oppClose2 = near(lm[LM.RIGHT_WRIST], lm[LM.LEFT_KNEE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipsVeryLow = (c)=&gt; (c[LM.LEFT_HIP].y &gt; Math.max(c[LM.LEFT_KNEE].y, c[LM.RIGHT_KNEE].y) * 0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const elbowsBent = ()=&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const aL = angle(lm[LM.LEFT_SHOULDER], lm[LM.LEFT_ELBOW], lm[LM.LEFT_WRIST]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const aR = angle(lm[LM.RIGHT_SHOULDER], lm[LM.RIGHT_ELBOW], lm[LM.RIGHT_WRIST]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return (aL&lt;150) || (aR&lt;150);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>};</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{ return prev &amp;&amp; (oppClose1||oppClose2) &amp;&amp; hipsVeryLow(lm) &amp;&amp; elbowsBent(); }catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_kneedrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Knee Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const sharpFlex = (kneeAngleL&lt;75) || (kneeAngleR&lt;75);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipBelowKnee = (c)=&gt; (c[LM.LEFT_HIP].y &gt; c[LM.LEFT_KNEE].y*0.98) || (c[LM.RIGHT_HIP].y &gt; c[LM.RIGHT_KНЕЕ].y*0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{ return prev &amp;&amp; sharpFlex &amp;&amp; hipBelowKnee(lm); }catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_sweepdrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Sweep Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function ankleSpeed(curr, prev, side){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const A = side==='L'? LM.LEFT_ANKLE : LM.RIGHT_АНКLE;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const dx = Math.abs(curr[A].x - prev[A].x);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const dy = Math.abs(curr[A].y - prev[A].y);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return Math.hypot(dx,dy);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipsLow = (c)=&gt; (c[LM.LEFT_HIP].y &gt; c[LM.LEFT_KNEE].y*0.96) || (c[LM.RIGHT_HIP].y &gt; c[LM.RIGHT_KNEЕ].y*0.96);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if(!prev) return false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const vL = ankleSpeed(lm, prev, 'L');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const vR = ankleSpeed(lm, prev, 'R');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const fastFoot = (vL&gt;0.02) || (vR&gt;0.02);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return fastFoot &amp;&amp; hipsLow(lm);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_spindrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Spin Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function shoulderAngle(p){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const v = vec(p[LM.LEFT_SHOULDER], p[LM.RIGHT_SHОULDER]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return Math.atan2(v.y, v.x);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipsLow = (c)=&gt; (c[LM.LEFT_HIP].y &gt; c[LM.LEFT_KNEЕ].y*0.96) || (c[LM.RIGHT_HIP].y &gt; c[LM.RIGHT_KNEE].y*0.96);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if(!prev) return false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const a0 = shoulderAngle(prev), a1 = shoulderAngle(lm);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const rot = Math.abs(a1 - a0);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return (rot &gt; 0.20) &amp;&amp; hipsLow(lm);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_hookdrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Hook Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function anklesCross(c){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return Math.abs(c[LM.LEFT_ANKLE].x - c[LM.RIGHT_ANKLE].x) &lt; 0.05;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const kneeAngleL = angle(lm[LM.LEFT_HIP], lm[LM.LEFT_KNEE], lm[LM.LEFT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const kneeAngleR = angle(lm[LM.RIGHT_HIP], lm[LM.RIGHT_KNEE], lm[LM.RIGHT_ANKLE]);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const sharpFlex = (kneeAngleL&lt;85) || (kneeAngleR&lt;85);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const hipsLow = (c)=&gt; (c[LM.LEFT_HIP].y &gt; c[LM.LEFT_KNEЕ].y*0.96) || (c[LM.RIGHT_HIP].y &gt; c[LM.RIGHT_KNEE].y*0.96);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{ return prev &amp;&amp; anklesCross(lm) &amp;&amp; sharpFlex &amp;&amp; hipsLow(lm); }catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_collapsedrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Collapse Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function hipVertSpeed(curr, prev){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const hC = mid(curr[LM.LEFT_HIP], curr[LM.RIGHT_HIP]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const hP = mid(prev[LM.LEFT_HIP], prev[LM.RIGHT_HIP]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return Math.abs(hC.y - hP.y);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function ankleDelta(curr, prev){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const dL = Math.hypot(curr[LM.LEFT_ANKLE].x - prev[LM.LEFT_АНКLE].x, curr[LM.LEFT_АНКLE].y - prev[LM.LEFT_АНКLE].y);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const dR = Math.hypот(curr[LM.RIGHT_АНКLE].x - prev[LM.RIGHT_АНКLE].x, curr[LM.RIGHT_АНКLE].y - prev[LM.RIGHT_АНКLE].y);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return (dL + dR)/2;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if(!prev) return false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const vHip = hipVertSpeed(lm, prev);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const vAnk = ankleDelta(lm, prev);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return (vHip&gt;0.02) &amp;&amp; (vAnk&lt;0.015);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_rolldrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Roll Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const shoulderLow = (c)=&gt; (c[LM.LEFT_SHOULDER].y &gt; c[LM.LEFT_KNEЕ].y) || (c[LM.RIGHT_SHOULDER].y &gt; c[LM.RIGHT_KNEЕ].y);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const wristsLow = (c)=&gt; (c[LM.LEFT_WRIST].y &gt; c[LM.LEFT_KNEЕ].y*0.98) || (c[LM.RIGHT_WRIST].y &gt; c[LM.RIGHT_KNEЕ].y*0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{ return prev &amp;&amp; shoulderLow(lm) &amp;&amp; wristsLow(lm); }catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>},</p>
+<p class="p1"><span class="Apple-converted-space">  </span>transition_toprock_suicidedrop: {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>name: "TopRock <span class="s2">→</span> Suicide Drop",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>type: "standing",</p>
+<p class="p1"><span class="Apple-converted-space">    </span>boundary(lm, prev){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function torsoTilt(curr){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const s = mid(curr[LM.LEFT_SHOULDER], curr[LM.RIGHT_SHОULDER]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const h = mid(curr[LM.LEFT_HIP], curr[LM.RIGHT_HIP]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const v = {x: s.x-h.x, y: s.y-h.y};</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const up = {x:0, y:-1};</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const cos = (v.x*up.x + v.y*up.y) / (Math.hypot(v.x,v.y)*1 + 1e-6);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return Math.acos(Math.min(1, Math.max(-1, cos))) * 180/Math.PI;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const wristsLow = (c)=&gt; (c[LM.LEFT_WRIST].y &gt; c[LM.LEFT_HIP].y*0.98) || (c[LM.RIGHT_WRIST].y &gt; c[LM.RIGHT_HIP].y*0.98);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if(!prev) return false;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const t0 = torsoTilt(prev), t1 = torsoTilt(lm);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const dT = Math.abs(t1 - t0);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return (t1&gt;50 &amp;&amp; dT&gt;6) &amp;&amp; wristsLow(lm);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}catch(e){ return false; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">};</p>
+<p class="p2"><br></p>
+<p class="p1">function getTransitionProfile(id){ return TRANSITIONS[id] || TRANSITIONS['transition_ts']; }</p>
+<p class="p2"><br></p>
+<p class="p1">let prevLm = null, prevTs = 0;</p>
+<p class="p1">let speedHist = [], jerkHist = [], angleVelHist = [];</p>
+<p class="p1">let boundaryTs = null;</p>
+<p class="p2"><br></p>
+<p class="p1">function com(lm){ return mid(lm[LM.LEFT_HIP], lm[LM.RIGHT_HIP]); }</p>
+<p class="p1">function horizSpeed(a,b,dt){ if(!a || !b || dt&lt;=0) return 0; return Math.abs(b.x - a.x) / dt; }</p>
+<p class="p1">function angleShoulderHipAnkle(lm, left=true){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const S = left ? LM.LEFT_SHOULDER : LM.RIGHT_SHОULDER;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const H = left ? LM.LEFT_HIP : LM.RIGHT_HIP;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const A = left ? LM.LEFT_АНКLE : LM.RIGHT_АНКLE;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return angle(lm[S], lm[H], lm[A]);</p>
+<p class="p1">}</p>
+<p class="p1">function lowPass(arr, k=5){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!arr.length) return 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const n = Math.min(k, arr.length); let s=0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(let i=arr.length-n;i&lt;arr.length;i++) s+=arr[i];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return s/n;</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function detectBoundary(lm){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const prof = getTransitionProfile(document.getElementById('move').value);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return prof.boundary(lm, prevLm);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function transitionMetrics(lm, ts){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const prof = getTransitionProfile(document.getElementById('move').value);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(prevLm &amp;&amp; prevTs){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const dt = (ts - prevTs);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(prof.type === 'floor'){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const aNow<span class="Apple-converted-space">  </span>= 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const aVel = Math.abs(aNow - aPrev)/Math.max(1e-3, dt);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>speedHist.push(aVel/180); if(speedHist.length&gt;60) speedHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const n = speedHist.length;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(n&gt;=2){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/Math.max(1e-3, dt);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>jerkHist.push(jerk); if(jerkHist.length&gt;60) jerkHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>angleVelHist.push(aVel); if(angleVelHist.length&gt;60) angleVelHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const cPrev = com(prevLm);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const cNow = com(lm);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const v = horizSpeed(cPrev, cNow, Math.max(1e-3, dt));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>speedHist.push(v); if(speedHist.length&gt;60) speedHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const n = speedHist.length;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(n&gt;=2){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/Math.max(1e-3, dt);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>jerkHist.push(jerk); if(jerkHist.length&gt;60) jerkHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const aNow<span class="Apple-converted-space">  </span>= 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const aVel = Math.abs(aNow - aPrev)/Math.max(1e-3, dt);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>angleVelHist.push(aVel); if(angleVelHist.length&gt;60) angleVelHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>prevLm = lm; prevTs = ts;</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function transitionScoreAndTips(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(boundaryTs===null){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const s = lowPass(speedHist, 10);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const tips = [];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(s&lt;0.002) tips.push("Подготви входа: движи центъра/ъгъла плавно.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>tips.push("Влез без да губиш инерция.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return {score: Math.round(Math.min(100, s*60000)), tips};</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const N = Math.min(speedHist.length, 36);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const half = Math.floor(N/2);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const pre = speedHist.slice(Math.max(0,speedHist.length-N), Math.max(0,speedHist.length-N)+half);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const post = speedHist.slice(Math.max(0,speedHist.length-N)+half);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sPre = pre.length ? pre.reduce((a,b)=&gt;a+b,0)/pre.length : 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const sPost = post.length ? post.reduce((a,b)=&gt;a+b,0)/post.length : 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const jerkAvg = jerkHist.slice(-N).reduce((a,b)=&gt;a+b,0)/Math.max(1,Math.min(N,jerkHist.length));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const angleVel = angleVelHist.slice(-N).reduce((a,b)=&gt;a+b,0)/Math.max(1,Math.min(N,angleVelHist.length));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const retention = sPre&gt;0 ? (sPost/sPre) : 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const jerkScore = Math.max(0, 1 - (jerkAvg / 0.08));</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const angScore = Math.max(0, 1 - (angleVel / 180));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const combined = (0.5*retention + 0.3*jerkScore + 0.2*angScore);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const score = Math.round(100 * Math.max(0, Math.min(1, combined)));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const tips = [];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(retention&lt;0.7) tips.push("Запази скоростта през входа.");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(jerkScore&lt;0.7) tips.push("Омекоти рязката промяна.");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(angScore&lt;0.7) tips.push("Плавни ъгли в прехода.");</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {score, tips};</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function scoreAndTips(lm, moveId){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const move = MOVES[moveId];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const tips = [];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let okCount = 0;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const c of move.constraints){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const pass = safeTest(()=&gt;c.test(lm));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(pass) okCount++; else tips.push(c.tip);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const score = Math.round(100 * okCount / move.constraints.length);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>return {score, tips};</p>
+<p class="p1">}</p>
+<p class="p1">function safeTest(fn){ try{ return !!fn(); } catch(e){ return false; } }</p>
+<p class="p2"><br></p>
+<p class="p1">async function init(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>videoEl = document.getElementById('video');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>canvasEl = document.getElementById('overlay');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>ctx = canvasEl.getContext('2d');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>drawing = new DrawingUtils(ctx);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>updateMirror();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>setStatus('зарежда модел…'); if(!window.isSecureContext){ logMsg('<span class="s3">⚠</span> file:// режим може да блокира камерата. Ползвай HTTPS или локален сървър.'); }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const vision = await FilesetResolver.forVisionTasks(</p>
+<p class="p1"><span class="Apple-converted-space">    </span>"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"</p>
+<p class="p1"><span class="Apple-converted-space">  </span>);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>try {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>landmarker = await PoseLandmarker.createFromOptions(vision, {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>baseOptions: {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",</p>
+<p class="p1"><span class="Apple-converted-space">        </span>delegate:"GPU"</p>
+<p class="p1"><span class="Apple-converted-space">      </span>},</p>
+<p class="p1"><span class="Apple-converted-space">      </span>runningMode: "VIDEO",</p>
+<p class="p1"><span class="Apple-converted-space">      </span>numPoses: 1,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>minPoseDetectionConfidence: 0.5,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>minPosePresenceConfidence: 0.5,</p>
+<p class="p1"><span class="Apple-converted-space">      </span>minTrackingConfidence: 0.5</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setStatus('модел: готов');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>} catch(e){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setStatus('Проблем при зареждане на модела: '+e.message);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function updateMirror(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const mirrored = document.getElementById('mirror').checked;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>videoEl.style.transform = mirrored ? 'scaleX(-1)' : 'scaleX(1)';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>canvasEl.style.transform = mirrored ? 'scaleX(-1)' : 'scaleX(1)';</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">async function startCamera(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!window.isSecureContext){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setStatus("Нужно е HTTPS или localhost, иначе камерата е блокирана.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>logMsg("Съвет: отвори файла от https (напр. GitHub Pages) или през локален сървър.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>alert("Камерата е блокирана за file:// страници. Ползвай HTTPS или локален сървър.");</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setStatus("getUserMedia не е налично в този браузър.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>alert("Този браузър не поддържа камерата през getUserMedia.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const desiredFacing = document.getElementById('facing').value;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>let constraintsList = [</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ video: { facingMode: { ideal: desiredFacing } }, audio:false },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ video: { facingMode: 'user' }, audio:false },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ video: true, audio:false }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>];</p>
+<p class="p1"><span class="Apple-converted-space">  </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const devices = await navigator.mediaDevices.enumerateDevices();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const hasBack = devices.some(d=&gt; d.kind==='videoinput' &amp;&amp; /back|rear|environment/i.test(d.label));</p>
+<p class="p1"><span class="Apple-converted-space">    </span>if(!hasBack &amp;&amp; desiredFacing==='environment'){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>constraintsList = constraintsList.slice(1);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>logMsg("Не открих задна камера. Преминавам към предна.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}catch(e){ logMsg("enumerateDevices грешка: "+e.message); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>let stream = null;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>for(const c of constraintsList){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>stream = await navigator.mediaDevices.getUserMedia(c);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>logMsg("Камера стартира с: "+JSON.stringify(c));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>break;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}catch(err){</p>
+<p class="p1"><span class="Apple-converted-space">      </span>logMsg("Провал с "+JSON.stringify(c)+": "+err.name+" / "+err.message);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!stream){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setStatus("Грешка при достъп до камерата. Провери разрешенията в Settings &gt; Apps &gt; Browser &gt; Permissions &gt; Camera.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>alert("Камерата не може да се стартира. Провери разрешенията.");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>try{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>videoEl.srcObject = stream;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>await new Promise(res =&gt; videoEl.onloadeddata = res);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>canvasEl.width = videoEl.videoWidth || 1280;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>canvasEl.height = videoEl.videoHeight || 720;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>running = true;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setStatus("камера: активна");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>predictLoop();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}catch(e){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>setStatus("Проблем при инициализация на видео: "+e.message);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function setScore(val){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const el = document.getElementById('score');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el.textContent = isFinite(val) ? String(val) : '—';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el.classList.remove('good','ok','bad');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!isFinite(val)) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el.classList.add(val&gt;=80 ? 'good' : val&gt;=60 ? 'ok' : 'bad');</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function setTempo(val){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const el = document.getElementById('tempo');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!val){ el.textContent = '—'; return; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const avg = bpmAvg.length ? (bpmAvg.reduce((a,b)=&gt;a+b,0)/bpmAvg.length) : val;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el.textContent = Math.round(avg) + ' стъпки/мин';</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">function setTips(list){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const el = document.getElementById('tips');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>el.innerHTML = '';</p>
+<p class="p1"><span class="Apple-converted-space">  </span>list.slice(0,4).forEach(t=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const d = document.createElement('span');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>d.className = 'tip';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>d.textContent = t;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>el.appendChild(d);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(list.length &amp;&amp; document.getElementById('voice').checked){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>speak(list[0]);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">async function predictLoop(){</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(!running) return;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const now = performance.now();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>if(videoEl.currentTime !== lastVideoTime){</p>
+<p class="p1"><span class="Apple-converted-space">    </span>lastVideoTime = videoEl.currentTime;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>landmarker.detectForVideo(videoEl, now, (res)=&gt;{</p>
+<p class="p1"><span class="Apple-converted-space">      </span>ctx.clearRect(0,0,canvasEl.width, canvasEl.height);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if(res &amp;&amp; res.landmarks &amp;&amp; res.landmarks[0]){</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const lm = res.landmarks[0];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>drawing.drawLandmarks(lm, { radius: (data)=&gt; DrawingUtils.lerp(data.from?.z ?? 0, -0.15, 0.1, 5, 1) });</p>
+<p class="p1"><span class="Apple-converted-space">        </span>drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const moveId = document.getElementById('move').value;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>if(moveId.startsWith('transition_')){</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const prof = getTransitionProfile(moveId);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const nowTs = performance.now()/1000;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(prof.boundary(lm, prevLm) &amp;&amp; boundaryTs===null){ boundaryTs = nowTs; speak("Вход!"); }</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const dt = (prevTs? nowTs - prevTs : 0.033);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(prevLm &amp;&amp; dt&gt;0){</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(prof.type === 'floor'){</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const aNow<span class="Apple-converted-space">  </span>= 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const aVel = Math.abs(aNow - aPrev)/dt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>speedHist.push(aVel/180); if(speedHist.length&gt;60) speedHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const n = speedHist.length;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>if(n&gt;=2){</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>jerkHist.push(jerk); if(jerkHist.length&gt;60) jerkHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">              </span>}</p>
+<p class="p1"><span class="Apple-converted-space">              </span>angleVelHist.push(aVel); if(angleVelHist.length&gt;60) angleVelHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const cPrev = com(prevLm); const cNow = com(lm);</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const v = horizSpeed(cPrev, cNow, dt);</p>
+<p class="p1"><span class="Apple-converted-space">              </span>speedHist.push(v); if(speedHist.length&gt;60) speedHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const n = speedHist.length;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>if(n&gt;=2){</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const jerk = Math.abs(speedHist[n-1]-speedHist[n-2])/dt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>jerkHist.push(jerk); if(jerkHist.length&gt;60) jerkHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">              </span>}</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const aPrev = 0.5*(angleShoulderHipAnkle(prevLm,true)+angleShoulderHipAnkle(prevLm,false));</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const aNow<span class="Apple-converted-space">  </span>= 0.5*(angleShoulderHipAnkle(lm,true)+angleShoulderHipAnkle(lm,false));</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const aVel = Math.abs(aNow - aPrev)/dt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>angleVelHist.push(aVel); if(angleVelHist.length&gt;60) angleVelHist.shift();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">          </span>prevLm = lm; prevTs = nowTs;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const {score, tips} = transitionScoreAndTips();</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_indian_kneedrop') tips.unshift("Свали коляното плавно в такт.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_drop') tips.unshift("Пусни ръце към пода без спиране.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_sixstep_babyfreeze') tips.unshift("Претегли на ръце и заключи бебе-фрийза гладко.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_kneedrop') tips.unshift("Меки колене, пази инерцията към пода.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_sweepdrop') tips.unshift("Широк sweep и плавен контрол към пода.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_spindrop') tips.unshift("Поддържай въртенето – не спирай преди спускането.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_hookdrop') tips.unshift("Хукът да е ясен, но без блокиране.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_collapsedrop') tips.unshift("Изглеждай като „падане“, но без да губиш flow.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_rolldrop') tips.unshift("Снизход през рамо, задръж кръговата енергия.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId==='transition_toprock_suicidedrop') tips.unshift("Комитнат вход, после стабилен контрол.");</p>
+<p class="p1"><span class="Apple-converted-space">          </span>setScore(score); setTips(tips); setTempo(null);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>boundaryTs = null; prevLm=null; prevTs=0; speedHist.length=0; jerkHist.length=0; angleVelHist.length=0;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const {score, tips} = scoreAndTips(lm, moveId);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>setScore(score); setTips(tips);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if(moveId === 'toprock' &amp;&amp; MOVES.toprock.stepDetector){</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const bpm = MOVES.toprock.stepDetector(lm, performance.now()/1000);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(bpm) setTempo(bpm);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>} else { setTempo(null); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>setScore(NaN);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>setTips(["Покажи цяло тяло в кадър."]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>setTempo(null);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>requestAnimationFrame(predictLoop);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">document.getElementById('btnStart').addEventListener('click', startCamera);</p>
+<p class="p1">document.getElementById('mirror').addEventListener('change', updateMirror);</p>
+<p class="p2"><br></p>
+<p class="p1">init();</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
